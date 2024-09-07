@@ -11,7 +11,7 @@ const ContentScript: React.FC = () => {
     const [selectedText, setSelectedText] = useState('');
 
     const popupWidth = 256; // 16 * 16 = 256px (w-64)
-    const popupHeight = 320; // 16 * 20 = 320px (h-80)
+    const popupHeight = 240; // 16 * 20 = 320px (h-80)
     const buttonHeight = 24; // 6 * 4 = 24px (h-6)
     const buttonWidth = 60; // Estimated width for the smaller button
     const gap = 10; // 10px gap between selection and button/popup
@@ -56,10 +56,10 @@ const ContentScript: React.FC = () => {
             );
 
             if (buttonPosition.isBottom) {
-                // If button is in the bottom half, position popup 20px higher
+                // If button is in the bottom half, align popup bottom with button bottom
                 top = buttonPosition.top - popupHeight + buttonHeight - popupOffset;
             } else {
-                // If button is in the top half, position popup 20px lower
+                // If button is in the top half, align popup top with button top
                 top = buttonPosition.top + popupOffset;
             }
 

@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from '../shadcn/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../shadcn/select';
 import { Input } from '../shadcn/input';
-import { Label } from '../shadcn/label';
 import { Button } from '../shadcn/button';
-import { X } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 
 interface RewritePopupProps {
     initialText: string;
@@ -13,12 +11,17 @@ interface RewritePopupProps {
 }
 
 const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initialPosition }) => {
-    const [selectedOption, setSelectedOption] = useState('');
+    const [selectedOption, setSelectedOption] = useState(() => {
+        const savedOption = localStorage.getItem('lastSelectedOption');
+        return savedOption || '';
+    });
+    const [isSelectOpen, setIsSelectOpen] = useState(false);
     const [extraNote, setExtraNote] = useState('');
     const [position, setPosition] = useState(initialPosition);
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const popupRef = useRef<HTMLDivElement>(null);
+    const selectRef = useRef<HTMLDivElement>(null);
 
     const handleRewrite = () => {
         // TODO: Implement AI rewrite logic here
@@ -50,14 +53,32 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
             setIsDragging(false);
         };
 
+        const handleClickOutside = (e: MouseEvent) => {
+            if (selectRef.current && !selectRef.current.contains(e.target as Node)) {
+                setIsSelectOpen(false);
+            }
+        };
+
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('mousedown', handleClickOutside);
 
         return () => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [isDragging, dragOffset]);
+
+    useEffect(() => {
+        localStorage.setItem('lastSelectedOption', selectedOption);
+    }, [selectedOption]);
+
+    const options = [
+        { value: 'formal', label: 'Formal' },
+        { value: 'casual', label: 'Casual' },
+        { value: 'professional', label: 'Professional' },
+    ];
 
     return (
         <div
@@ -84,34 +105,44 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                     </Button>
                 </div>
                 <CardContent className="p-3 space-y-3">
-                    <div className="space-y-1">
-                        <Label htmlFor="rewrite-option" className="text-xs font-medium">Rewrite Option</Label>
-                        <Select value={selectedOption} onValueChange={setSelectedOption}>
-                            <SelectTrigger id="rewrite-option" className="w-full h-8 text-xs">
-                                <SelectValue placeholder="Select an option" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="formal">Formal</SelectItem>
-                                <SelectItem value="casual">Casual</SelectItem>
-                                <SelectItem value="professional">Professional</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    <div ref={selectRef} className="relative">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsSelectOpen(!isSelectOpen)}
+                            className="w-full h-8 text-xs justify-between px-3 py-1"
+                        >
+                            {selectedOption ? options.find(opt => opt.value === selectedOption)?.label : 'Select agent'}
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                        </Button>
+                        {isSelectOpen && (
+                            <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                                {options.map((option) => (
+                                    <div
+                                        key={option.value}
+                                        className="px-3 py-1.5 text-xs hover:bg-gray-100 cursor-pointer"
+                                        onClick={() => {
+                                            setSelectedOption(option.value);
+                                            setIsSelectOpen(false);
+                                        }}
+                                    >
+                                        {option.label}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="extra-note" className="text-xs font-medium">Extra Note</Label>
-                        <Input
-                            id="extra-note"
-                            placeholder="Extra note"
-                            value={extraNote}
-                            onChange={(e) => setExtraNote(e.target.value)}
-                            className="w-full h-8 text-xs"
-                        />
+                    <Input
+                        placeholder="Extra note"
+                        value={extraNote}
+                        onChange={(e) => setExtraNote(e.target.value)}
+                        className="w-full h-8 text-xs"
+                    />
+                    <div className="p-1 bg-gray-100 rounded-md text-xs h-16 overflow-y-auto">
+                        {initialText}
                     </div>
-                    <div className="space-y-1">
-                        <Label className="text-xs font-medium">Selected Text</Label>
-                        <div className="p-1 bg-gray-100 rounded-md text-xs h-16 overflow-y-auto">{initialText}</div>
-                    </div>
-                    <Button onClick={handleRewrite} className="w-full h-8 text-xs">Rewrite</Button>
+                    <Button onClick={handleRewrite} className="w-full h-8 text-xs">
+                        Rewrite
+                    </Button>
                 </CardContent>
             </Card>
         </div>

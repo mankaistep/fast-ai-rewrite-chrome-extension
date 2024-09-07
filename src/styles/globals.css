@@ -74,3 +74,8 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* Prevent blurring when custom select is open */
+body:has(.custom-select[data-state="open"]) > *:not(.custom-select) {
+    filter: none !important;
+}
