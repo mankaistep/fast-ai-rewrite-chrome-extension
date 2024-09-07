@@ -1,1 +1,0 @@
-{"version":3,"file":"background.js","mappings":";;;;;;AAAA;AACA;AACA;AAEA","sources":["webpack://fast-ai-rewrite/./src/background.ts"],"sourcesContent":["chrome.runtime.onInstalled.addListener(() => {\n    console.log('Fast AI Rewrite extension installed');\n});\n\n// Add any background scripts logic here"],"names":[],"sourceRoot":""}
