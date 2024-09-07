@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "Quickly rewrite text using AI",
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "watch": "webpack -w --config webpack.config.js"
+    "build": "webpack --mode=production",
+    "build:dev": "webpack --mode=development",
+    "watch": "webpack --watch --mode=development"
   },
   "dependencies": {
     "react": "^17.0.2",
