@@ -1,45 +1,48 @@
 const path = require('path');
-const CopyPlugin = require('copy-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
-module.exports = (env, argv) => {
-    const isProduction = argv.mode === 'production';
-    const isDev = argv.mode === 'development' || env.dev;
-
-    return {
-        mode: isProduction ? 'production' : 'development',
-        entry: {
-            popup: './src/popup.tsx',
-            background: './src/background.ts',
-            'content-script': './src/content-script.tsx'
-        },
-        output: {
-            path: path.resolve(__dirname, 'dist'),
-            filename: '[name].js'
-        },
-        module: {
-            rules: [
-                {
-                    test: /\.tsx?$/,
-                    use: 'ts-loader',
-                    exclude: /node_modules/
-                },
-                {
-                    test: /\.css$/,
-                    use: ['style-loader', 'css-loader', 'postcss-loader']
-                }
-            ]
-        },
-        resolve: {
-            extensions: ['.tsx', '.ts', '.js', '.css']
-        },
-        plugins: [
-            new CopyPlugin({
-                patterns: [{ from: 'public', to: '.' }]
-            }),
+module.exports = {
+    entry: {
+        content_script: './src/content_script.tsx',
+        background: './src/background.ts',
+        popup: './src/popup.tsx',
+    },
+    output: {
+        path: path.resolve(__dirname, 'dist'),
+        filename: '[name].js',
+    },
+    module: {
+        rules: [
+            {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
+            },
+            {
+                test: /\.css$/,
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    'css-loader',
+                    'postcss-loader',
+                ],
+            },
         ],
-        devtool: isDev ? 'inline-source-map' : false,
-        optimization: {
-            minimize: !isDev
-        }
-    };
+    },
+    plugins: [
+        new MiniCssExtractPlugin({
+            filename: '[name].css',
+        }),
+        new CopyWebpackPlugin({
+            patterns: [
+                { from: 'public' }, // This will copy all files from the public folder to the output folder
+            ],
+        }),
+    ],
+    resolve: {
+        extensions: ['.tsx', '.ts', '.js', '.css'],
+        alias: {
+            '@': path.resolve(__dirname, 'src'),
+        },
+    },
 };
