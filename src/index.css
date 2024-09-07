@@ -1,0 +1,13 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+.App {
+    width: 300px;
+    padding: 16px;
+}
+
+/* Add any other global styles you need */
