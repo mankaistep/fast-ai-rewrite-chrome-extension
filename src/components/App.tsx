@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import Popup from './Popup';
+import { Button } from "./ui/button"
+import { Input } from "./ui/input"
+import { Textarea } from "./ui/textarea"
 
 interface AppProps {
     selectedText?: string;
@@ -7,31 +9,46 @@ interface AppProps {
 }
 
 const App: React.FC<AppProps> = ({ selectedText, position }) => {
-    const [isPopupOpen, setIsPopupOpen] = useState(!!selectedText);
+    const [inputText, setInputText] = useState(selectedText || '');
+    const [outputText, setOutputText] = useState('');
 
-    const handleClose = () => {
-        setIsPopupOpen(false);
+    const handleRewrite = () => {
+        // Here you would typically call your AI rewrite function
+        // For now, we'll just reverse the text as a placeholder
+        setOutputText(inputText.split('').reverse().join(''));
     };
 
-    if (!isPopupOpen) {
-        return null;
-    }
-
     return (
-        <div
-            className="App"
-            style={{
-                position: 'absolute',
-                left: position ? `${position.x}px` : '50%',
-                top: position ? `${position.y}px` : '50%',
-                transform: position ? 'none' : 'translate(-50%, -50%)',
-                zIndex: 9999,
-            }}
-        >
-            <Popup
-                initialText={selectedText || ''}
-                onClose={handleClose}
-            />
+        <div className="p-4 bg-background text-foreground">
+            <h1 className="text-2xl font-bold mb-4">Fast AI Rewrite</h1>
+            <div className="space-y-4">
+                <div>
+                    <label htmlFor="input-text" className="block text-sm font-medium mb-1">
+                        Text to Rewrite
+                    </label>
+                    <Textarea
+                        id="input-text"
+                        placeholder="Enter text to rewrite..."
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        className="w-full"
+                    />
+                </div>
+                <Button onClick={handleRewrite}>Rewrite</Button>
+                {outputText && (
+                    <div>
+                        <label htmlFor="output-text" className="block text-sm font-medium mb-1">
+                            Rewritten Text
+                        </label>
+                        <Textarea
+                            id="output-text"
+                            value={outputText}
+                            readOnly
+                            className="w-full"
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

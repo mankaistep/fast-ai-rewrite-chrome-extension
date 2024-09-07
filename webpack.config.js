@@ -3,6 +3,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = (env, argv) => {
     const isProduction = argv.mode === 'production';
+    const isDev = argv.mode === 'development' || env.dev;
 
     return {
         mode: isProduction ? 'production' : 'development',
@@ -24,7 +25,7 @@ module.exports = (env, argv) => {
                 },
                 {
                     test: /\.css$/,
-                    use: ['style-loader', 'css-loader']
+                    use: ['style-loader', 'css-loader', 'postcss-loader']
                 }
             ]
         },
@@ -36,9 +37,9 @@ module.exports = (env, argv) => {
                 patterns: [{ from: 'public', to: '.' }]
             }),
         ],
-        devtool: isProduction ? false : 'inline-source-map',
+        devtool: isDev ? 'inline-source-map' : false,
         optimization: {
-            minimize: isProduction
+            minimize: !isDev
         }
     };
 };
