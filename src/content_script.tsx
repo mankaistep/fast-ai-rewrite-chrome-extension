@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import FloatingButton from './components/ui/FloatingButton';
 import RewritePopup from './components/ui/RewritePopup';
+import DebugPanel from './components/ui/DebugPanel';
 import { getSelectionPosition, isEditableElement, getSelectedText } from './utils/domUtils';
 import './styles/globals.css';
 
@@ -9,45 +10,81 @@ const ContentScript: React.FC = () => {
     const [buttonPosition, setButtonPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
     const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
     const [selectedText, setSelectedText] = useState('');
+    const [logs, setLogs] = useState<string[]>([]);
 
-    const popupWidth = 256; // 16 * 16 = 256px (w-64)
-    const popupHeight = 240; // 16 * 20 = 320px (h-80)
-    const buttonHeight = 24; // 6 * 4 = 24px (h-6)
-    const buttonWidth = 60; // Estimated width for the smaller button
-    const gap = 10; // 10px gap between selection and button/popup
-    const popupOffset = 20; // 20px offset for popup positioning
-
-    useEffect(() => {
-        const handleSelectionChange = () => {
-            const selection = window.getSelection();
-            if (selection && !selection.isCollapsed) {
-                const anchorNode = selection.anchorNode;
-                if (anchorNode && isEditableElement(anchorNode.parentElement)) {
-                    const position = getSelectionPosition();
-                    if (position) {
-                        const isBottom = position.bottom > window.innerHeight / 2;
-                        setButtonPosition({
-                            top: isBottom ? position.top - buttonHeight - gap : position.bottom + gap,
-                            left: Math.min((position.left + position.right) / 2 - buttonWidth / 2, window.innerWidth - buttonWidth),
-                            isBottom
-                        });
-                        setSelectedText(getSelectedText());
-                    }
-                } else {
-                    setButtonPosition(null);
-                }
-            } else {
-                setButtonPosition(null);
-            }
-        };
-
-        document.addEventListener('selectionchange', handleSelectionChange);
-        return () => {
-            document.removeEventListener('selectionchange', handleSelectionChange);
-        };
+    const addLog = useCallback((message: string) => {
+        setLogs(prevLogs => [...prevLogs, `${new Date().toISOString()}: ${message}`]);
+        console.log(message); // Also log to console for easier debugging
     }, []);
 
-    const handleButtonClick = () => {
+    const popupWidth = 256;
+    const popupHeight = 240;
+    const buttonHeight = 24;
+    const buttonWidth = 60;
+    const gap = 10;
+    const popupOffset = 20;
+
+    const handleSelectionChange = useCallback(() => {
+        const selection = window.getSelection();
+        const activeElement = document.activeElement;
+        let selectionText = '';
+        let position = null;
+
+        if (activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLInputElement) {
+            const start = activeElement.selectionStart;
+            const end = activeElement.selectionEnd;
+            if (start !== null && end !== null && start !== end) {
+                selectionText = activeElement.value.substring(start, end);
+                const rect = activeElement.getBoundingClientRect();
+                const textareaStyles = window.getComputedStyle(activeElement);
+                const lineHeight = parseInt(textareaStyles.lineHeight) || 20;
+                const paddingTop = parseInt(textareaStyles.paddingTop);
+                const scrollTop = activeElement.scrollTop;
+
+                const lines = activeElement.value.substr(0, start).split('\n');
+                const startLine = lines.length;
+                const startTop = rect.top + paddingTop + (startLine - 1) * lineHeight - scrollTop;
+
+                position = {
+                    top: startTop,
+                    bottom: startTop + lineHeight,
+                    left: rect.left,
+                    right: rect.right
+                };
+            }
+        } else if (selection && !selection.isCollapsed) {
+            selectionText = selection.toString();
+            position = getSelectionPosition();
+        }
+
+        if (selectionText && position) {
+            const isBottom = position.bottom > window.innerHeight / 2;
+            const newButtonPosition = {
+                top: isBottom ? position.top - buttonHeight - gap : position.top + gap,
+                left: position.left,
+                isBottom
+            };
+            setButtonPosition(newButtonPosition);
+            setSelectedText(selectionText);
+        } else {
+            setButtonPosition(null);
+        }
+    }, []);
+
+    useEffect(() => {
+        document.addEventListener('selectionchange', handleSelectionChange);
+        document.addEventListener('mouseup', handleSelectionChange);
+        document.addEventListener('keyup', handleSelectionChange);
+
+        return () => {
+            document.removeEventListener('selectionchange', handleSelectionChange);
+            document.removeEventListener('mouseup', handleSelectionChange);
+            document.removeEventListener('keyup', handleSelectionChange);
+        };
+    }, [handleSelectionChange]);
+
+    const handleButtonClick = useCallback(() => {
+        addLog('handleButtonClick called in ContentScript');
         if (buttonPosition) {
             let top: number;
             let left: number = Math.min(
@@ -56,21 +93,19 @@ const ContentScript: React.FC = () => {
             );
 
             if (buttonPosition.isBottom) {
-                // If button is in the bottom half, align popup bottom with button bottom
                 top = buttonPosition.top - popupHeight + buttonHeight - popupOffset;
             } else {
-                // If button is in the top half, align popup top with button top
                 top = buttonPosition.top + popupOffset;
             }
 
             setPopupPosition({ top, left });
-            setButtonPosition(null); // Hide the button when showing the popup
+            setButtonPosition(null);
         }
-    };
+    }, [buttonPosition, addLog]);
 
-    const handlePopupClose = () => {
+    const handlePopupClose = useCallback(() => {
         setPopupPosition(null);
-    };
+    }, []);
 
     return (
         <>
@@ -78,6 +113,7 @@ const ContentScript: React.FC = () => {
                 <FloatingButton
                     position={{ top: buttonPosition.top, left: buttonPosition.left }}
                     onClick={handleButtonClick}
+                    addLog={addLog}
                 />
             )}
             {popupPosition && (
@@ -87,6 +123,7 @@ const ContentScript: React.FC = () => {
                     initialPosition={popupPosition}
                 />
             )}
+            <DebugPanel logs={logs} />
         </>
     );
 };
