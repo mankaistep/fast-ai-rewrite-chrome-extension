@@ -14,7 +14,7 @@ const ContentScript: React.FC = () => {
 
     const addLog = useCallback((message: string) => {
         setLogs(prevLogs => [...prevLogs, `${new Date().toISOString()}: ${message}`]);
-        console.log(message); // Also log to console for easier debugging
+        console.log(message);
     }, []);
 
     const popupWidth = 256;
@@ -60,7 +60,7 @@ const ContentScript: React.FC = () => {
         if (selectionText && position) {
             const isBottom = position.bottom > window.innerHeight / 2;
             const newButtonPosition = {
-                top: isBottom ? position.top - buttonHeight - gap : position.top + gap,
+                top: isBottom ? position.top - buttonHeight - gap : position.bottom + gap,
                 left: position.left,
                 isBottom
             };
