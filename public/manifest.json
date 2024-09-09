@@ -11,7 +11,8 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content_script.js"],
-      "css": ["content_script.css"]
+      "css": ["content_script.css"],
+      "all_frames": true
     }
   ],
   "action": {

@@ -1,28 +1,53 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Button } from '../shadcn/button';
 
 interface FloatingButtonProps {
     position: { top: number; left: number };
     onClick: () => void;
+    addLog: (message: string) => void;
 }
 
-const FloatingButton: React.FC<FloatingButtonProps> = ({ position, onClick }) => (
-    <div
-        className="fixed z-50"
-        style={{
-            top: `${position.top}px`,
-            left: `${position.left}px`,
-        }}
-    >
-        <Button
-            onClick={onClick}
-            variant="outline"
-            size="sm"
-            className="h-6 text-xs px-2 bg-white shadow-md hover:bg-gray-100"
+const FloatingButton: React.FC<FloatingButtonProps> = ({ position, onClick, addLog }) => {
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        addLog('FloatingButton mousedown event');
+        e.preventDefault();
+        e.nativeEvent.stopImmediatePropagation();
+        onClick();
+    }, [onClick, addLog]);
+
+    const handleMouseUp = useCallback((e: React.MouseEvent) => {
+        addLog('FloatingButton mouseup event');
+    }, [addLog]);
+
+    return (
+        <div
+            className="fixed z-[99999]"
+            style={{
+                top: `${position.top}px`,
+                left: `${position.left}px`,
+            }}
+            onMouseEnter={() => addLog('Mouse entered FloatingButton')}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
         >
-            Rewrite
-        </Button>
-    </div>
-);
+            <Button
+                onMouseDown={(e) => {
+                    addLog('Button mousedown event');
+                    e.nativeEvent.stopImmediatePropagation();
+                    handleMouseDown(e);
+                }}
+                onMouseUp={(e) => {
+                    addLog('Button mouseup event');
+                    e.nativeEvent.stopImmediatePropagation();
+                }}
+                variant="outline"
+                size="sm"
+                className="h-6 text-xs px-2 bg-red-500 text-white shadow-md hover:bg-red-600"
+            >
+                Rewrite
+            </Button>
+        </div>
+    );
+};
 
 export default FloatingButton;
