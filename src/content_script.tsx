@@ -13,6 +13,11 @@ const ContentScript: React.FC = () => {
     const [logs, setLogs] = useState<string[]>([]);
     const [key, setKey] = useState(0);
     const lastSelectionRef = useRef('');
+    const [currentSelection, setCurrentSelection] = useState<{
+        element: HTMLElement | null;
+        start: number;
+        end: number;
+    } | null>(null);
 
     const addLog = useCallback((message: string) => {
         setLogs(prevLogs => [...prevLogs, `${new Date().toISOString()}: ${message}`]);
@@ -30,6 +35,7 @@ const ContentScript: React.FC = () => {
         const activeElement = document.activeElement;
         let selectionText = '';
         let position = null;
+        let currentSelectionInfo = null;
 
         if (activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLInputElement) {
             const start = activeElement.selectionStart;
@@ -52,10 +58,17 @@ const ContentScript: React.FC = () => {
                     left: rect.left,
                     right: rect.right
                 };
+                currentSelectionInfo = { element: activeElement, start, end };
             }
         } else if (selection && !selection.isCollapsed) {
             selectionText = selection.toString();
             position = getSelectionPosition();
+            const range = selection.getRangeAt(0);
+            currentSelectionInfo = {
+                element: range.startContainer.parentElement,
+                start: range.startOffset,
+                end: range.endOffset
+            };
         }
 
         if (selectionText && position && selectionText !== lastSelectionRef.current) {
@@ -68,6 +81,7 @@ const ContentScript: React.FC = () => {
             };
             setButtonPosition(newButtonPosition);
             setSelectedText(selectionText);
+            setCurrentSelection(currentSelectionInfo);
             addLog(`New selection: "${selectionText.substring(0, 20)}..."`);
 
             // Only reset popup if it's open and the selection has changed
@@ -77,6 +91,7 @@ const ContentScript: React.FC = () => {
             }
         } else if (!selectionText) {
             setButtonPosition(null);
+            setCurrentSelection(null);
             addLog('Selection cleared');
         }
     }, [popupPosition, addLog]);
@@ -125,6 +140,78 @@ const ContentScript: React.FC = () => {
         addLog('Popup state reset');
     }, [addLog]);
 
+    const handleApproveRewrite = useCallback((rewrittenText: string) => {
+        if (currentSelection && currentSelection.element) {
+            const { element, start, end } = currentSelection;
+
+            if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement) {
+                const currentValue = element.value;
+                const newValue = currentValue.substring(0, start) + rewrittenText + currentValue.substring(end);
+                element.value = newValue;
+                element.setSelectionRange(start, start + rewrittenText.length);
+                element.focus();
+                element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+            } else if (element.isContentEditable) {
+                const range = document.createRange();
+                const selection = window.getSelection();
+
+                // Find the text node where the selection starts
+                let currentNode = element.firstChild;
+                let currentOffset = 0;
+
+                while (currentNode) {
+                    const nodeText = currentNode.textContent || '';
+                    if (currentOffset + nodeText.length > start) {
+                        break;
+                    }
+                    currentOffset += nodeText.length;
+                    currentNode = currentNode.nextSibling;
+                }
+
+                if (currentNode) {
+                    // Set start and end of the range
+                    range.setStart(currentNode, start - currentOffset);
+
+                    while (currentNode) {
+                        const nodeText = currentNode.textContent || '';
+                        if (currentOffset + nodeText.length >= end) {
+                            range.setEnd(currentNode, end - currentOffset);
+                            break;
+                        }
+                        currentOffset += nodeText.length;
+                        currentNode = currentNode.nextSibling;
+                    }
+
+                    if (!currentNode) {
+                        range.setEnd(element, element.childNodes.length);
+                    }
+
+                    // Delete the contents and insert the new text
+                    range.deleteContents();
+                    const textNode = document.createTextNode(rewrittenText);
+                    range.insertNode(textNode);
+
+                    // Set the selection to the end of the inserted text
+                    range.setStartAfter(textNode);
+                    range.setEndAfter(textNode);
+
+                    selection?.removeAllRanges();
+                    selection?.addRange(range);
+                } else {
+                    // If we couldn't find a suitable node, insert at the end
+                    element.textContent += rewrittenText;
+                }
+
+                element.focus();
+                element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+            }
+            addLog('Replaced text with rewritten version');
+        } else {
+            addLog('Failed to replace text: Invalid selection or element');
+        }
+        handlePopupClose();
+    }, [currentSelection, handlePopupClose, addLog]);
+
     return (
         <>
             {buttonPosition && !popupPosition && (
@@ -142,6 +229,7 @@ const ContentScript: React.FC = () => {
                     initialPosition={popupPosition}
                     onReset={handlePopupReset}
                     addLog={addLog}
+                    onApprove={handleApproveRewrite}
                 />
             )}
             <DebugPanel logs={logs} />

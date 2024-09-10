@@ -10,9 +10,10 @@ interface RewritePopupProps {
     initialPosition: { top: number; left: number; isBottom: boolean };
     onReset: () => void;
     addLog: (message: string) => void;
+    onApprove: (rewrittenText: string) => void;
 }
 
-const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initialPosition, onReset, addLog }) => {
+const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initialPosition, onReset, addLog, onApprove }) => {
     const [selectedOption, setSelectedOption] = useState(() => {
         const savedOption = localStorage.getItem('lastSelectedOption');
         return savedOption || '';
@@ -46,7 +47,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
 
     const handleApprove = () => {
         addLog('Approved rewritten text: ' + rewrittenText);
-        onClose();
+        onApprove(rewrittenText);
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -164,7 +165,8 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                                     <div
                                         key={option.value}
                                         className="px-3 py-1.5 text-xs hover:bg-gray-100 cursor-pointer"
-                                        onClick={() => {
+                                        onClick={() =>
+                                        {
                                             setSelectedOption(option.value);
                                             setIsSelectOpen(false);
                                             addLog(`Selected option: ${option.label}`);
