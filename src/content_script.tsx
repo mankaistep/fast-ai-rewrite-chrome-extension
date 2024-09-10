@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import FloatingButton from './components/ui/FloatingButton';
 import RewritePopup from './components/ui/RewritePopup';
@@ -11,6 +11,8 @@ const ContentScript: React.FC = () => {
     const [popupPosition, setPopupPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
     const [selectedText, setSelectedText] = useState('');
     const [logs, setLogs] = useState<string[]>([]);
+    const [key, setKey] = useState(0);
+    const lastSelectionRef = useRef('');
 
     const addLog = useCallback((message: string) => {
         setLogs(prevLogs => [...prevLogs, `${new Date().toISOString()}: ${message}`]);
@@ -56,7 +58,8 @@ const ContentScript: React.FC = () => {
             position = getSelectionPosition();
         }
 
-        if (selectionText && position) {
+        if (selectionText && position && selectionText !== lastSelectionRef.current) {
+            lastSelectionRef.current = selectionText;
             const isBottom = position.bottom > window.innerHeight / 2;
             const newButtonPosition = {
                 top: isBottom ? position.top - buttonHeight - gap : position.bottom + gap,
@@ -65,25 +68,35 @@ const ContentScript: React.FC = () => {
             };
             setButtonPosition(newButtonPosition);
             setSelectedText(selectionText);
-        } else {
+            addLog(`New selection: "${selectionText.substring(0, 20)}..."`);
+
+            // Only reset popup if it's open and the selection has changed
+            if (popupPosition) {
+                setKey(prevKey => prevKey + 1);
+                addLog('Resetting popup due to new selection');
+            }
+        } else if (!selectionText) {
             setButtonPosition(null);
+            addLog('Selection cleared');
         }
-    }, []);
+    }, [popupPosition, addLog]);
 
     useEffect(() => {
-        document.addEventListener('selectionchange', handleSelectionChange);
-        document.addEventListener('mouseup', handleSelectionChange);
-        document.addEventListener('keyup', handleSelectionChange);
+        const handleSelectionChangeDebounced = debounce(handleSelectionChange, 100);
+
+        document.addEventListener('selectionchange', handleSelectionChangeDebounced);
+        document.addEventListener('mouseup', handleSelectionChangeDebounced);
+        document.addEventListener('keyup', handleSelectionChangeDebounced);
 
         return () => {
-            document.removeEventListener('selectionchange', handleSelectionChange);
-            document.removeEventListener('mouseup', handleSelectionChange);
-            document.removeEventListener('keyup', handleSelectionChange);
+            document.removeEventListener('selectionchange', handleSelectionChangeDebounced);
+            document.removeEventListener('mouseup', handleSelectionChangeDebounced);
+            document.removeEventListener('keyup', handleSelectionChangeDebounced);
         };
     }, [handleSelectionChange]);
 
     const handleButtonClick = useCallback(() => {
-        addLog('handleButtonClick called in ContentScript');
+        addLog('FloatingButton clicked');
         if (buttonPosition) {
             let top: number;
             let left: number = Math.min(
@@ -99,12 +112,18 @@ const ContentScript: React.FC = () => {
 
             setPopupPosition({ top, left, isBottom: buttonPosition.isBottom });
             setButtonPosition(null);
+            addLog('Popup opened');
         }
     }, [buttonPosition, addLog]);
 
     const handlePopupClose = useCallback(() => {
         setPopupPosition(null);
-    }, []);
+        addLog('Popup closed');
+    }, [addLog]);
+
+    const handlePopupReset = useCallback(() => {
+        addLog('Popup state reset');
+    }, [addLog]);
 
     return (
         <>
@@ -117,15 +136,31 @@ const ContentScript: React.FC = () => {
             )}
             {popupPosition && (
                 <RewritePopup
+                    key={key}
                     initialText={selectedText}
                     onClose={handlePopupClose}
                     initialPosition={popupPosition}
+                    onReset={handlePopupReset}
+                    addLog={addLog}
                 />
             )}
             <DebugPanel logs={logs} />
         </>
     );
 };
+
+// Debounce function to limit the frequency of selection change handling
+function debounce(func: Function, wait: number) {
+    let timeout: NodeJS.Timeout;
+    return function executedFunction(...args: any[]) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
 const root = document.createElement('div');
 root.id = 'fast-ai-rewrite-root';

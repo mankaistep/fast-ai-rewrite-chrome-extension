@@ -8,9 +8,11 @@ interface RewritePopupProps {
     initialText: string;
     onClose: () => void;
     initialPosition: { top: number; left: number; isBottom: boolean };
+    onReset: () => void;
+    addLog: (message: string) => void;
 }
 
-const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initialPosition }) => {
+const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initialPosition, onReset, addLog }) => {
     const [selectedOption, setSelectedOption] = useState(() => {
         const savedOption = localStorage.getItem('lastSelectedOption');
         return savedOption || '';
@@ -26,16 +28,24 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
     const selectRef = useRef<HTMLDivElement>(null);
 
     const handleRewrite = async () => {
+        addLog('Rewrite button clicked');
         setIsLoading(true);
-        // Simulating an API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setRewrittenText("This is a simulated rewritten text. It's just a placeholder for now.");
-        setIsLoading(false);
+        try {
+            // Simulating an API call
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const newText = "This is a simulated rewritten text. It's just a placeholder for now.";
+            setRewrittenText(newText);
+            addLog('Rewrite completed: ' + newText);
+        } catch (error) {
+            console.error('Error rewriting text:', error);
+            addLog('Error rewriting text: ' + (error as Error).message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleApprove = () => {
-        // TODO: Implement approval logic
-        console.log('Approved rewritten text:', rewrittenText);
+        addLog('Approved rewritten text: ' + rewrittenText);
         onClose();
     };
 
@@ -47,6 +57,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                 y: e.clientY - rect.top
             });
             setIsDragging(true);
+            addLog('Started dragging popup');
         }
     };
 
@@ -62,7 +73,10 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
         };
 
         const handleMouseUp = () => {
-            setIsDragging(false);
+            if (isDragging) {
+                setIsDragging(false);
+                addLog('Stopped dragging popup');
+            }
         };
 
         const handleClickOutside = (e: MouseEvent) => {
@@ -80,11 +94,18 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
             document.removeEventListener('mouseup', handleMouseUp);
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isDragging, dragOffset]);
+    }, [isDragging, dragOffset, addLog]);
 
     useEffect(() => {
         localStorage.setItem('lastSelectedOption', selectedOption);
     }, [selectedOption]);
+
+    useEffect(() => {
+        setRewrittenText('');
+        setIsLoading(false);
+        onReset();
+        addLog('Popup state reset');
+    }, [initialText, onReset, addLog]);
 
     const options = [
         { value: 'formal', label: 'Formal' },
@@ -146,6 +167,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                                         onClick={() => {
                                             setSelectedOption(option.value);
                                             setIsSelectOpen(false);
+                                            addLog(`Selected option: ${option.label}`);
                                         }}
                                     >
                                         {option.label}
