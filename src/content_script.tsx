@@ -13,7 +13,7 @@ const ContentScript: React.FC = () => {
     const [logs, setLogs] = useState<string[]>([]);
     const [key, setKey] = useState(0);
     const lastSelectionRef = useRef('');
-    const [currentSelection, setCurrentSelection] = useState<{
+    const currentSelectionRef = useRef<{
         element: HTMLElement | null;
         start: number;
         end: number;
@@ -81,7 +81,7 @@ const ContentScript: React.FC = () => {
             };
             setButtonPosition(newButtonPosition);
             setSelectedText(selectionText);
-            setCurrentSelection(currentSelectionInfo);
+            currentSelectionRef.current = currentSelectionInfo
             addLog(`New selection: "${selectionText.substring(0, 20)}..."`);
 
             // Only reset popup if it's open and the selection has changed
@@ -91,7 +91,6 @@ const ContentScript: React.FC = () => {
             }
         } else if (!selectionText) {
             setButtonPosition(null);
-            setCurrentSelection(null);
             addLog('Selection cleared');
         }
     }, [popupPosition, addLog]);
@@ -141,9 +140,27 @@ const ContentScript: React.FC = () => {
     }, [addLog]);
 
     const handleApproveRewrite = useCallback((rewrittenText: string) => {
-        if (currentSelection && currentSelection.element) {
-            const { element, start, end } = currentSelection;
+        addLog('handleApproveRewrite called with text: ' + rewrittenText.substring(0, 20) + '...');
 
+        const currentSelection = currentSelectionRef.current
+
+        if (!currentSelection) {
+            addLog('Failed to replace text: currentSelection is null');
+            handlePopupClose();
+            return;
+        }
+
+        const { element, start, end } = currentSelection;
+
+        if (!element) {
+            addLog('Failed to replace text: element is null');
+            handlePopupClose();
+            return;
+        }
+
+        addLog(`Replacing text in element type: ${element.tagName}, isContentEditable: ${element.isContentEditable}`);
+
+        try {
             if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement) {
                 const currentValue = element.value;
                 const newValue = currentValue.substring(0, start) + rewrittenText + currentValue.substring(end);
@@ -151,66 +168,55 @@ const ContentScript: React.FC = () => {
                 element.setSelectionRange(start, start + rewrittenText.length);
                 element.focus();
                 element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+                addLog('Replaced text in input/textarea element');
             } else if (element.isContentEditable) {
+                const currentHTML = element.innerHTML;
+                const beforeSelection = currentHTML.substring(0, start);
+                const afterSelection = currentHTML.substring(end);
+                const newHTML = beforeSelection + rewrittenText + afterSelection;
+                element.innerHTML = newHTML;
+
+                // Set the cursor position or select the replaced text
                 const range = document.createRange();
                 const selection = window.getSelection();
 
-                // Find the text node where the selection starts
-                let currentNode = element.firstChild;
+                // Find the text node containing the rewritten text
+                const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+                let currentNode;
                 let currentOffset = 0;
 
-                while (currentNode) {
-                    const nodeText = currentNode.textContent || '';
-                    if (currentOffset + nodeText.length > start) {
+                while ((currentNode = walker.nextNode())) {
+                    const nodeLength = currentNode.textContent?.length || 0;
+                    if (currentOffset + nodeLength >= start) {
+                        const startOffset = start - currentOffset;
+                        const endOffset = Math.min(startOffset + rewrittenText.length, nodeLength);
+                        range.setStart(currentNode, startOffset);
+                        range.setEnd(currentNode, endOffset);
                         break;
                     }
-                    currentOffset += nodeText.length;
-                    currentNode = currentNode.nextSibling;
+                    currentOffset += nodeLength;
                 }
 
-                if (currentNode) {
-                    // Set start and end of the range
-                    range.setStart(currentNode, start - currentOffset);
-
-                    while (currentNode) {
-                        const nodeText = currentNode.textContent || '';
-                        if (currentOffset + nodeText.length >= end) {
-                            range.setEnd(currentNode, end - currentOffset);
-                            break;
-                        }
-                        currentOffset += nodeText.length;
-                        currentNode = currentNode.nextSibling;
-                    }
-
-                    if (!currentNode) {
-                        range.setEnd(element, element.childNodes.length);
-                    }
-
-                    // Delete the contents and insert the new text
-                    range.deleteContents();
-                    const textNode = document.createTextNode(rewrittenText);
-                    range.insertNode(textNode);
-
-                    // Set the selection to the end of the inserted text
-                    range.setStartAfter(textNode);
-                    range.setEndAfter(textNode);
-
+                if (range.startContainer && range.endContainer) {
                     selection?.removeAllRanges();
                     selection?.addRange(range);
+                    addLog('Set selection range in contenteditable element');
                 } else {
-                    // If we couldn't find a suitable node, insert at the end
-                    element.textContent += rewrittenText;
+                    addLog('Failed to set selection range in contenteditable element');
                 }
 
                 element.focus();
                 element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+                addLog('Replaced text in contenteditable element');
+            } else {
+                addLog(`Failed to replace text: Unsupported element type ${element.tagName}`);
             }
-            addLog('Replaced text with rewritten version');
-        } else {
-            addLog('Failed to replace text: Invalid selection or element');
+        } catch (error) {
+            addLog(`Error during text replacement: ${error}`);
         }
+
         handlePopupClose();
-    }, [currentSelection, handlePopupClose, addLog]);
+    }, [handlePopupClose, addLog]);
 
     return (
         <>
