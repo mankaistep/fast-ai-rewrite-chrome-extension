@@ -8,7 +8,7 @@ import './styles/globals.css';
 
 const ContentScript: React.FC = () => {
     const [buttonPosition, setButtonPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
-    const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
+    const [popupPosition, setPopupPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
     const [selectedText, setSelectedText] = useState('');
     const [logs, setLogs] = useState<string[]>([]);
 
@@ -22,7 +22,6 @@ const ContentScript: React.FC = () => {
     const buttonHeight = 24;
     const buttonWidth = 60;
     const gap = 10;
-    const popupOffset = 20;
 
     const handleSelectionChange = useCallback(() => {
         const selection = window.getSelection();
@@ -93,12 +92,12 @@ const ContentScript: React.FC = () => {
             );
 
             if (buttonPosition.isBottom) {
-                top = buttonPosition.top - popupHeight + buttonHeight - popupOffset;
+                top = buttonPosition.top;
             } else {
-                top = buttonPosition.top + popupOffset;
+                top = buttonPosition.top - popupHeight + buttonHeight;
             }
 
-            setPopupPosition({ top, left });
+            setPopupPosition({ top, left, isBottom: buttonPosition.isBottom });
             setButtonPosition(null);
         }
     }, [buttonPosition, addLog]);
