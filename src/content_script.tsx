@@ -119,9 +119,9 @@ const ContentScript: React.FC = () => {
             );
 
             if (buttonPosition.isBottom) {
-                top = buttonPosition.top;
+                top = buttonPosition.top + buttonHeight;
             } else {
-                top = buttonPosition.top - popupHeight + buttonHeight;
+                top = buttonPosition.top;
             }
 
             setPopupPosition({ top, left, isBottom: buttonPosition.isBottom });
