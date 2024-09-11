@@ -36,6 +36,7 @@ const ContentScript: React.FC = () => {
         let selectionText = '';
         let position = null;
         let currentSelectionInfo = null;
+        let isEditable = false;
 
         if (activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLInputElement) {
             const start = activeElement.selectionStart;
@@ -59,19 +60,28 @@ const ContentScript: React.FC = () => {
                     right: rect.right
                 };
                 currentSelectionInfo = { element: activeElement, start, end };
+                isEditable = true;
             }
         } else if (selection && !selection.isCollapsed) {
-            selectionText = selection.toString();
-            position = getSelectionPosition();
             const range = selection.getRangeAt(0);
-            currentSelectionInfo = {
-                element: range.startContainer.parentElement,
-                start: range.startOffset,
-                end: range.endOffset
-            };
+            const commonAncestor = range.commonAncestorContainer;
+            const editableElement = commonAncestor.nodeType === Node.ELEMENT_NODE
+                ? (commonAncestor as Element).closest('[contenteditable="true"]')
+                : (commonAncestor.parentElement as Element)?.closest('[contenteditable="true"]');
+
+            if (editableElement) {
+                selectionText = selection.toString();
+                position = getSelectionPosition();
+                currentSelectionInfo = {
+                    element: editableElement as HTMLElement,
+                    start: range.startOffset,
+                    end: range.endOffset
+                };
+                isEditable = true;
+            }
         }
 
-        if (selectionText && position && selectionText !== lastSelectionRef.current) {
+        if (selectionText && position && isEditable && selectionText !== lastSelectionRef.current) {
             lastSelectionRef.current = selectionText;
             const isBottom = position.bottom > window.innerHeight / 2;
             const newButtonPosition = {
@@ -81,19 +91,18 @@ const ContentScript: React.FC = () => {
             };
             setButtonPosition(newButtonPosition);
             setSelectedText(selectionText);
-            currentSelectionRef.current = currentSelectionInfo
-            addLog(`New selection: "${selectionText.substring(0, 20)}..."`);
+            currentSelectionRef.current = currentSelectionInfo;
+            addLog(`New selection in editable element: "${selectionText.substring(0, 20)}..."`);
 
-            // Only reset popup if it's open and the selection has changed
             if (popupPosition) {
                 setKey(prevKey => prevKey + 1);
                 addLog('Resetting popup due to new selection');
             }
-        } else if (!selectionText) {
+        } else if (!selectionText || !isEditable) {
             setButtonPosition(null);
-            addLog('Selection cleared');
+            addLog('Selection cleared or not in editable element');
         }
-    }, [popupPosition, addLog]);
+    }, [popupPosition, addLog, buttonHeight, gap]);
 
     useEffect(() => {
         const handleSelectionChangeDebounced = debounce(handleSelectionChange, 100);
@@ -132,6 +141,7 @@ const ContentScript: React.FC = () => {
 
     const handlePopupClose = useCallback(() => {
         setPopupPosition(null);
+        currentSelectionRef.current = null;
         addLog('Popup closed');
     }, [addLog]);
 
@@ -218,6 +228,26 @@ const ContentScript: React.FC = () => {
         handlePopupClose();
     }, [handlePopupClose, addLog]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (popupPosition) {
+                // Close the popup if it's open and the user starts typing
+                // We'll ignore some keys that don't represent typing
+                const ignoredKeys = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'Enter', 'Tab'];
+                if (!ignoredKeys.includes(e.key)) {
+                    handlePopupClose();
+                    addLog('Popup closed due to typing');
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [popupPosition, handlePopupClose, addLog]);
+
     return (
         <>
             {buttonPosition && !popupPosition && (
@@ -243,7 +273,6 @@ const ContentScript: React.FC = () => {
     );
 };
 
-// Debounce function to limit the frequency of selection change handling
 function debounce(func: Function, wait: number) {
     let timeout: NodeJS.Timeout;
     return function executedFunction(...args: any[]) {
