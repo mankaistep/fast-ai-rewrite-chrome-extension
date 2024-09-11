@@ -114,6 +114,20 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
         { value: 'professional', label: 'Professional' },
     ];
 
+    const popupStyle: React.CSSProperties = {
+        fontSize: '14px',
+        lineHeight: '1.5',
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: 'normal',
+    };
+
+    const buttonStyle: React.CSSProperties = {
+        fontSize: '12px',
+        lineHeight: '1',
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: 'normal',
+    };
+
     return (
         <div
             ref={popupRef}
@@ -122,30 +136,34 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                 top: position.isBottom ? 'auto' : `${position.top}px`,
                 bottom: position.isBottom ? `${window.innerHeight - position.top}px` : 'auto',
                 left: `${position.left}px`,
-                cursor: isDragging ? 'grabbing' : 'grab'
+                cursor: isDragging ? 'grabbing' : 'grab',
+                ...popupStyle,
             }}
         >
             <Card className="w-64 bg-white shadow-lg overflow-hidden">
                 <div
                     className="h-6 bg-gray-100 flex justify-end items-center px-2 cursor-grab active:cursor-grabbing"
                     onMouseDown={handleMouseDown}
+                    style={popupStyle}
                 >
                     <Button
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0"
                         onClick={onClose}
+                        style={buttonStyle}
                     >
                         <X className="h-3 w-3" />
                     </Button>
                 </div>
-                <CardContent className="p-3 space-y-3">
+                <CardContent className="p-3 space-y-3" style={popupStyle}>
                     <div
-                        className="p-1 bg-gray-100 rounded-md text-xs overflow-y-auto"
+                        className="p-1 bg-gray-100 rounded-md overflow-y-auto"
                         style={{
                             height: 'auto',
                             maxHeight: 'calc(1.5rem * 4)',
-                            lineHeight: '1.5rem'
+                            lineHeight: '1.5rem',
+                            fontSize: '12px',
                         }}
                     >
                         {initialText}
@@ -154,23 +172,24 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                         <Button
                             variant="outline"
                             onClick={() => setIsSelectOpen(!isSelectOpen)}
-                            className="w-full h-8 text-xs justify-between px-3 py-1"
+                            className="w-full h-8 justify-between px-3 py-1"
+                            style={buttonStyle}
                         >
                             {selectedOption ? options.find(opt => opt.value === selectedOption)?.label : 'Select agent'}
                             <ChevronDown className="h-4 w-4 opacity-50" />
                         </Button>
                         {isSelectOpen && (
-                            <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                            <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10" style={popupStyle}>
                                 {options.map((option) => (
                                     <div
                                         key={option.value}
-                                        className="px-3 py-1.5 text-xs hover:bg-gray-100 cursor-pointer"
-                                        onClick={() =>
-                                        {
+                                        className="px-3 py-1.5 hover:bg-gray-100 cursor-pointer"
+                                        onClick={() => {
                                             setSelectedOption(option.value);
                                             setIsSelectOpen(false);
                                             addLog(`Selected option: ${option.label}`);
                                         }}
+                                        style={{ fontSize: '12px' }}
                                     >
                                         {option.label}
                                     </div>
@@ -182,15 +201,17 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                         placeholder="Extra note"
                         value={extraNote}
                         onChange={(e) => setExtraNote(e.target.value)}
-                        className="w-full h-8 text-xs"
+                        className="w-full h-8"
+                        style={{ fontSize: '12px' }}
                     />
                     {rewrittenText && (
                         <div
-                            className="p-1 bg-green-100 rounded-md text-xs overflow-y-auto"
+                            className="p-1 bg-green-100 rounded-md overflow-y-auto"
                             style={{
                                 height: 'auto',
                                 maxHeight: 'calc(1.5rem * 4)',
-                                lineHeight: '1.5rem'
+                                lineHeight: '1.5rem',
+                                fontSize: '12px',
                             }}
                         >
                             {rewrittenText}
@@ -199,8 +220,9 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                     {!rewrittenText ? (
                         <Button
                             onClick={handleRewrite}
-                            className="w-full h-8 text-xs"
+                            className="w-full h-8"
                             disabled={isLoading}
+                            style={buttonStyle}
                         >
                             {isLoading ? (
                                 <>
@@ -215,15 +237,17 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                         <div className="flex justify-between">
                             <Button
                                 onClick={handleApprove}
-                                className="w-3/4 h-8 text-xs mr-1"
+                                className="w-3/4 h-8 mr-1"
+                                style={buttonStyle}
                             >
                                 Looks good
                             </Button>
                             <Button
                                 onClick={handleRewrite}
-                                className="w-1/4 h-8 text-xs ml-1"
+                                className="w-1/4 h-8 ml-1"
                                 variant="outline"
                                 disabled={isLoading}
+                                style={buttonStyle}
                             >
                                 {isLoading ? (
                                     <RotateCw className="h-4 w-4 animate-spin" />

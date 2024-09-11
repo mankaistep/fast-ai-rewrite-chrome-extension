@@ -43,6 +43,12 @@ const FloatingButton: React.FC<FloatingButtonProps> = ({ position, onClick, addL
                 variant="outline"
                 size="sm"
                 className="h-6 text-xs px-2 bg-red-500 text-white shadow-md hover:bg-red-600"
+                style={{
+                    fontSize: '12px',
+                    lineHeight: '1',
+                    fontFamily: 'Arial, sans-serif',
+                    fontWeight: 'normal',
+                }}
             >
                 Rewrite
             </Button>
