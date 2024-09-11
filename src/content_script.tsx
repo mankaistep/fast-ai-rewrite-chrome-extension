@@ -285,8 +285,23 @@ function debounce(func: Function, wait: number) {
     };
 }
 
+// Create a container for the Shadow DOM
 const root = document.createElement('div');
 root.id = 'fast-ai-rewrite-root';
 document.body.appendChild(root);
 
-ReactDOM.render(<ContentScript />, root);
+// Create a shadow root
+const shadowRoot = root.attachShadow({ mode: 'open' });
+
+// Create a container for your React app inside the shadow root
+const container = document.createElement('div');
+shadowRoot.appendChild(container);
+
+// Inject your styles into the shadow root
+const style = document.createElement('link');
+style.rel = 'stylesheet';
+style.href = chrome.runtime.getURL('content_script.css');
+shadowRoot.appendChild(style);
+
+// Render your React app
+ReactDOM.render(<ContentScript />, container);

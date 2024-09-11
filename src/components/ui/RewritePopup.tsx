@@ -114,19 +114,10 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
         { value: 'professional', label: 'Professional' },
     ];
 
-    const popupStyle: React.CSSProperties = {
-        fontSize: '14px',
-        lineHeight: '1.5',
-        fontFamily: 'Arial, sans-serif',
-        fontWeight: 'normal',
-    };
-
-    const buttonStyle: React.CSSProperties = {
+    const globalStyle = {
         fontSize: '12px',
-        lineHeight: '1',
-        fontFamily: 'Arial, sans-serif',
         fontWeight: 'normal',
-    };
+    }
 
     return (
         <div
@@ -137,33 +128,33 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                 bottom: position.isBottom ? `${window.innerHeight - position.top}px` : 'auto',
                 left: `${position.left}px`,
                 cursor: isDragging ? 'grabbing' : 'grab',
-                ...popupStyle,
+                ...globalStyle,
             }}
         >
-            <Card className="w-64 bg-white shadow-lg overflow-hidden">
+            <Card className="w-64 bg-white shadow-lg overflow-hidden fastai-border-radius-6px">
                 <div
-                    className="h-6 bg-gray-100 flex justify-end items-center px-2 cursor-grab active:cursor-grabbing"
+                    className="h-6 bg-gray-100 flex justify-end items-center px-2 cursor-grab active:cursor-grabbing rounded-t-lg"
                     onMouseDown={handleMouseDown}
-                    style={popupStyle}
+                    style={globalStyle}
                 >
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-5 w-5 p-0"
+                        className="h-5 w-5 p-0 rounded-full fastai-border-radius-6px"
                         onClick={onClose}
-                        style={buttonStyle}
+                        style={globalStyle}
                     >
                         <X className="h-3 w-3" />
                     </Button>
                 </div>
-                <CardContent className="p-3 space-y-3" style={popupStyle}>
+                <CardContent className="p-3 space-y-3" style={globalStyle}>
                     <div
-                        className="p-1 bg-gray-100 rounded-md overflow-y-auto"
+                        className="p-1 bg-gray-100 rounded-md overflow-y-auto fastai-border-radius-6px"
                         style={{
                             height: 'auto',
                             maxHeight: 'calc(1.5rem * 4)',
                             lineHeight: '1.5rem',
-                            fontSize: '12px',
+                            ...globalStyle,
                         }}
                     >
                         {initialText}
@@ -172,24 +163,24 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                         <Button
                             variant="outline"
                             onClick={() => setIsSelectOpen(!isSelectOpen)}
-                            className="w-full h-8 justify-between px-3 py-1"
-                            style={buttonStyle}
+                            className="w-full h-8 justify-between px-3 py-1 border border-gray-300 rounded-md fastai-border-radius-6px"
+                            style={globalStyle}
                         >
                             {selectedOption ? options.find(opt => opt.value === selectedOption)?.label : 'Select agent'}
-                            <ChevronDown className="h-4 w-4 opacity-50" />
+                            <ChevronDown className="h-4 w-4 opacity-50 fastai-border-radius-6px" />
                         </Button>
                         {isSelectOpen && (
-                            <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10" style={popupStyle}>
+                            <div className="absolute mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-10" style={globalStyle}>
                                 {options.map((option) => (
                                     <div
                                         key={option.value}
-                                        className="px-3 py-1.5 hover:bg-gray-100 cursor-pointer"
+                                        className="px-3 py-1.5 hover:bg-gray-100 cursor-pointer first:rounded-t-md last:rounded-b-md"
                                         onClick={() => {
-                                            setSelectedOption(option.value);
-                                            setIsSelectOpen(false);
-                                            addLog(`Selected option: ${option.label}`);
+                                            setSelectedOption(option.value)
+                                            setIsSelectOpen(false)
+                                            addLog(`Selected option: ${option.label}`)
                                         }}
-                                        style={{ fontSize: '12px' }}
+                                        style={globalStyle}
                                     >
                                         {option.label}
                                     </div>
@@ -201,8 +192,8 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                         placeholder="Extra note"
                         value={extraNote}
                         onChange={(e) => setExtraNote(e.target.value)}
-                        className="w-full h-8"
-                        style={{ fontSize: '12px' }}
+                        className="w-full h-8 border border-gray-300 rounded-md fastai-border-radius-6px"
+                        style={globalStyle}
                     />
                     {rewrittenText && (
                         <div
@@ -211,7 +202,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                                 height: 'auto',
                                 maxHeight: 'calc(1.5rem * 4)',
                                 lineHeight: '1.5rem',
-                                fontSize: '12px',
+                                ...globalStyle,
                             }}
                         >
                             {rewrittenText}
@@ -220,9 +211,8 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                     {!rewrittenText ? (
                         <Button
                             onClick={handleRewrite}
-                            className="w-full h-8"
+                            className="w-full h-8 fastai-primary-button"
                             disabled={isLoading}
-                            style={buttonStyle}
                         >
                             {isLoading ? (
                                 <>
@@ -237,17 +227,14 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                         <div className="flex justify-between">
                             <Button
                                 onClick={handleApprove}
-                                className="w-3/4 h-8 mr-1"
-                                style={buttonStyle}
+                                className="w-3/4 h-8 mr-1 fastai-primary-button"
                             >
                                 Looks good
                             </Button>
                             <Button
                                 onClick={handleRewrite}
-                                className="w-1/4 h-8 ml-1"
-                                variant="outline"
+                                className="w-1/4 h-8 ml-1 fastai-secondary-button"
                                 disabled={isLoading}
-                                style={buttonStyle}
                             >
                                 {isLoading ? (
                                     <RotateCw className="h-4 w-4 animate-spin" />
@@ -260,7 +247,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                 </CardContent>
             </Card>
         </div>
-    );
+    )
 };
 
 export default RewritePopup;
