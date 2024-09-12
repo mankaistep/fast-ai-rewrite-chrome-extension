@@ -75,7 +75,32 @@
     }
 }
 
-/* Prevent blurring when custom select is open */
-body:has(.custom-select[data-state="open"]) > *:not(.custom-select) {
-    filter: none !important;
+.fastai-border-radius-6px {
+    border-radius: 6px;
+}
+
+.fastai-primary-button {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    font-size: 12px;
+    border-radius: 6px;
+    font-weight: normal;
+}
+
+.fastai-secondary-button:hover {
+    background: linear-gradient(135deg, #7a69f6, #a78bf5) !important; /* a slightly different gradient */
+}
+
+.fastai-secondary-button {
+    background: white;
+    color: #6366f1;
+    border: 1px solid #6366f1;
+    font-size: 12px;
+    border-radius: 6px;
+    font-weight: normal;
+}
+
+.fastai-secondary-button:hover {
+    background: #f2f2f2 !important; /* change background color to a light gray on hover */
 }

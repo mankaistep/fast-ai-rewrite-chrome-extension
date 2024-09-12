@@ -11,8 +11,13 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content_script.js"],
-      "css": ["content_script.css"],
       "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content_script.css"],
+      "matches": ["<all_urls>"]
     }
   ],
   "action": {

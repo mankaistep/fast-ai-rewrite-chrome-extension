@@ -26,3 +26,15 @@ export function isEditableElement(element: Element | null): boolean {
 export function getSelectedText(): string {
     return window.getSelection()?.toString() || '';
 }
+
+export function debounce(func: Function, wait: number) {
+    let timeout: NodeJS.Timeout;
+    return function executedFunction(...args: any[]) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
