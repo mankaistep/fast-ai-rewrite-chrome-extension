@@ -171,12 +171,12 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                             <ChevronDown className="h-4 w-4 opacity-50 fastai-border-radius-6px" />
                         </Button>
                         {isSelectOpen && (
-                            <div className="absolute mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-10" style={globalStyle}>
+                            <div className="absolute mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-10 fastai-border-radius-6px" style={globalStyle}>
                                 {options.map((option) => (
                                     <div
                                         key={option.value}
                                         className="px-3 py-1.5 hover:bg-gray-100 cursor-pointer first:rounded-t-md last:rounded-b-md"
-                                        onClick={() => {
+                                        onMouseDown={() => {
                                             setSelectedOption(option.value)
                                             setIsSelectOpen(false)
                                             addLog(`Selected option: ${option.label}`)
