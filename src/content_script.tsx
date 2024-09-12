@@ -14,7 +14,6 @@ const ContentScript: React.FC = () => {
     const [popupPosition, setPopupPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
     const [selectedText, setSelectedText] = useState('');
     const [logs, setLogs] = useState<string[]>([]);
-    const [key, setKey] = useState(0);
     const lastSelectionRef = useRef('');
     const currentSelectionRef = useRef<{
         element: HTMLElement | null;
@@ -92,7 +91,6 @@ const ContentScript: React.FC = () => {
             addLog(`New selection in editable element: "${selectionText.substring(0, 20)}..."`);
 
             if (popupPosition) {
-                setKey(prevKey => prevKey + 1);
                 addLog('Resetting popup due to new selection');
             }
         } else if (!selectionText || !isEditable) {
@@ -255,7 +253,6 @@ const ContentScript: React.FC = () => {
             )}
             {popupPosition && (
                 <RewritePopup
-                    key={key}
                     initialText={selectedText}
                     onClose={handlePopupClose}
                     initialPosition={popupPosition}
