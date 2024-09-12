@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from '../shadcn/card';
 import { Input } from '../shadcn/input';
 import { Button } from '../shadcn/button';
-import { X, ChevronDown, RotateCw } from 'lucide-react';
+import {X, ChevronDown, RotateCw, Sparkles, Check} from 'lucide-react';
 
 interface RewritePopupProps {
     initialText: string;
@@ -217,8 +217,10 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                         >
                             {isLoading ? (
                                 <>
-                                    <RotateCw className="mr-2 h-4 w-4 animate-spin" />
-                                    Rewriting...
+                                    <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
+                                    <div className="animate-pulse">
+                                        Thinking...
+                                    </div>
                                 </>
                             ) : (
                                 'Rewrite'
@@ -231,6 +233,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                                 className="w-3/4 h-8 mr-1 fastai-primary-button"
                             >
                                 Looks good
+                                <Check className="w-4 h-4 ml-2"/>
                             </Button>
                             <Button
                                 onClick={handleRewrite}

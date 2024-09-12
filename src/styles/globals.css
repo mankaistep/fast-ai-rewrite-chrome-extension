@@ -88,6 +88,10 @@
     font-weight: normal;
 }
 
+.fastai-secondary-button:hover {
+    background: linear-gradient(135deg, #7a69f6, #a78bf5) !important; /* a slightly different gradient */
+}
+
 .fastai-secondary-button {
     background: white;
     color: #6366f1;
@@ -95,4 +99,8 @@
     font-size: 12px;
     border-radius: 6px;
     font-weight: normal;
+}
+
+.fastai-secondary-button:hover {
+    background: #f2f2f2 !important; /* change background color to a light gray on hover */
 }

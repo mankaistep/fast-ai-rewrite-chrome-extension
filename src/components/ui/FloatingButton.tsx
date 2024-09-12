@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { Button } from '../shadcn/button';
+import {Sparkles} from "lucide-react";
 
 interface FloatingButtonProps {
     position: { top: number; left: number };
@@ -40,7 +41,6 @@ const FloatingButton: React.FC<FloatingButtonProps> = ({ position, onClick, addL
                     addLog('Button mouseup event');
                     e.nativeEvent.stopImmediatePropagation();
                 }}
-                variant="outline"
                 size="sm"
                 className="h-6 text-xs px-2 shadow-md fastai-primary-button"
             >
