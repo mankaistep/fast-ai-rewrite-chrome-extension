@@ -68,7 +68,8 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                 setPosition(prev => ({
                     ...prev,
                     top: e.clientY - dragOffset.y,
-                    left: e.clientX - dragOffset.x
+                    left: e.clientX - dragOffset.x,
+                    isBottom: false
                 }));
             }
         };
