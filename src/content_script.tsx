@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import FloatingButton from './components/ui/FloatingButton';
 import RewritePopup from './components/ui/RewritePopup';
-import DebugPanel from './components/ui/DebugPanel';
 import { getSelectionPosition, isEditableElement, getSelectedText } from './utils/domUtils';
 import './styles/globals.css';
 
@@ -25,9 +24,7 @@ const ContentScript: React.FC = () => {
     }, []);
 
     const popupWidth = 256;
-    const popupHeight = 240;
     const buttonHeight = 24;
-    const buttonWidth = 60;
     const gap = 10;
 
     const handleSelectionChange = useCallback(() => {
@@ -268,7 +265,6 @@ const ContentScript: React.FC = () => {
                     onApprove={handleApproveRewrite}
                 />
             )}
-            <DebugPanel logs={logs} />
         </>
     );
 };
