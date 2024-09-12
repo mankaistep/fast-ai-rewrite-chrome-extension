@@ -2,8 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import FloatingButton from './components/ui/FloatingButton';
 import RewritePopup from './components/ui/RewritePopup';
-import { getSelectionPosition, isEditableElement, getSelectedText } from './utils/domUtils';
+import { getSelectionPosition, debounce } from './utils/domUtils';
 import './styles/globals.css';
+
+const POPUP_WIDTH = 256;
+const BUTTON_HEIGHT = 24;
+const BUTTON_POPUP_GAP = 10;
 
 const ContentScript: React.FC = () => {
     const [buttonPosition, setButtonPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
@@ -22,10 +26,6 @@ const ContentScript: React.FC = () => {
         setLogs(prevLogs => [...prevLogs, `${new Date().toISOString()}: ${message}`]);
         console.log(message);
     }, []);
-
-    const popupWidth = 256;
-    const buttonHeight = 24;
-    const gap = 10;
 
     const handleSelectionChange = useCallback(() => {
         const selection = window.getSelection();
@@ -82,7 +82,7 @@ const ContentScript: React.FC = () => {
             lastSelectionRef.current = selectionText;
             const isBottom = position.bottom > window.innerHeight / 2;
             const newButtonPosition = {
-                top: isBottom ? position.top - buttonHeight - gap : position.bottom + gap,
+                top: isBottom ? position.top - BUTTON_HEIGHT - BUTTON_POPUP_GAP : position.bottom + BUTTON_POPUP_GAP,
                 left: position.left,
                 isBottom
             };
@@ -99,7 +99,7 @@ const ContentScript: React.FC = () => {
             setButtonPosition(null);
             addLog('Selection cleared or not in editable element');
         }
-    }, [popupPosition, addLog, buttonHeight, gap]);
+    }, [popupPosition, addLog, BUTTON_HEIGHT, BUTTON_POPUP_GAP]);
 
     useEffect(() => {
         const handleSelectionChangeDebounced = debounce(handleSelectionChange, 100);
@@ -121,11 +121,11 @@ const ContentScript: React.FC = () => {
             let top: number;
             let left: number = Math.min(
                 buttonPosition.left,
-                window.innerWidth - popupWidth
+                window.innerWidth - POPUP_WIDTH
             );
 
             if (buttonPosition.isBottom) {
-                top = buttonPosition.top + buttonHeight;
+                top = buttonPosition.top + BUTTON_HEIGHT;
             } else {
                 top = buttonPosition.top;
             }
@@ -229,9 +229,8 @@ const ContentScript: React.FC = () => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (popupPosition) {
                 // Close the popup if it's open and the user starts typing
-                // We'll ignore some keys that don't represent typing
                 const ignoredKeys = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'Enter', 'Tab'];
-                if (!ignoredKeys.includes(e.key)) {
+                if (!ignoredKeys.includes(e.key) && (e.target as HTMLElement).id !== "fast-ai-rewrite-root") {
                     handlePopupClose();
                     addLog('Popup closed due to typing');
                 }
@@ -268,18 +267,6 @@ const ContentScript: React.FC = () => {
         </>
     );
 };
-
-function debounce(func: Function, wait: number) {
-    let timeout: NodeJS.Timeout;
-    return function executedFunction(...args: any[]) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
 
 // Create a container for the Shadow DOM
 const root = document.createElement('div');
