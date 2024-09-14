@@ -3,7 +3,14 @@
   "name": "Fast AI Rewrite",
   "version": "1.0",
   "description": "Quickly rewrite selected text using AI",
-  "permissions": ["activeTab"],
+  "permissions": [
+    "activeTab",
+    "cookies"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "https://localhost:3000/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -17,6 +24,10 @@
   "web_accessible_resources": [
     {
       "resources": ["content_script.css"],
+      "matches": ["<all_urls>"]
+    },
+    {
+      "resources": ["token-listener.js"],
       "matches": ["<all_urls>"]
     }
   ],

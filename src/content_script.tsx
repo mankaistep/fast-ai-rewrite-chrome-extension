@@ -9,7 +9,39 @@ const POPUP_WIDTH = 256;
 const BUTTON_HEIGHT = 24;
 const BUTTON_POPUP_GAP = 10;
 
+// Inject auth token
+function injectToken() {
+    chrome.runtime.sendMessage({action: "getToken"}, (response) => {
+        if (response.token) {
+            // Use window.postMessage to pass the token to the page
+            window.postMessage({ type: "FAST_AI_AUTH_TOKEN", token: response.token }, "*");
+            console.log("Auth token message posted to page");
+
+            // Trigger a login status check after a short delay
+            setTimeout(() => {
+                window.postMessage({ type: "CHECK_FAST_AI_AUTH_TOKEN" }, "*");
+            }, 100);
+        } else {
+            console.log(`Failed to get auth token: ${response.error}`);
+        }
+    });
+}
+
+function injectTokenListener() {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('token-listener.js');
+    script.onload = function() {
+        console.log('Token listener script injected and loaded'); // Debug log
+
+        // @ts-ignore
+        this.remove();
+    };
+    (document.head || document.documentElement).appendChild(script);
+}
+
 const ContentScript: React.FC = () => {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
     const [buttonPosition, setButtonPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
     const [popupPosition, setPopupPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
     const [selectedText, setSelectedText] = useState('');
@@ -242,6 +274,35 @@ const ContentScript: React.FC = () => {
         };
     }, [popupPosition, handlePopupClose, addLog]);
 
+    // Check auth
+    useEffect(() => {
+        const checkLoginStatus = () => {
+            window.postMessage({ type: "CHECK_FAST_AI_AUTH_TOKEN" }, "*");
+        };
+
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data.type === "FAST_AI_AUTH_TOKEN_STATUS") {
+                const isTokenAvailable = event.data.isAvailable;
+                setIsLoggedIn(isTokenAvailable);
+                addLog(`Login status checked. User is ${isTokenAvailable ? 'logged in' : 'not logged in'}`);
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Check login status immediately
+        checkLoginStatus();
+
+        // Set up listener for future token injections
+        window.addEventListener('authTokenAvailable', checkLoginStatus);
+
+        // Clean up listeners
+        return () => {
+            window.removeEventListener('message', handleMessage);
+            window.removeEventListener('authTokenAvailable', checkLoginStatus);
+        };
+    }, []);
+
     return (
         <>
             {buttonPosition && !popupPosition && (
@@ -282,6 +343,12 @@ const style = document.createElement('link');
 style.rel = 'stylesheet';
 style.href = chrome.runtime.getURL('content_script.css');
 shadowRoot.appendChild(style);
+
+// Inject token listener
+injectTokenListener()
+
+// Inject token
+setTimeout(injectToken, 100)
 
 // Render your React app
 ReactDOM.render(<ContentScript />, container);
