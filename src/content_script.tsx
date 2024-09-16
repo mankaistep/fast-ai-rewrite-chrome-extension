@@ -92,14 +92,9 @@ const ContentScript: React.FC = () => {
             setButtonPosition(newButtonPosition);
             setSelectedText(selectionText);
             currentSelectionRef.current = currentSelectionInfo;
-            addLog(`New selection in editable element: "${selectionText.substring(0, 20)}..."`);
 
-            if (popupPosition) {
-                addLog('Resetting popup due to new selection');
-            }
         } else if (!selectionText || !isEditable) {
             setButtonPosition(null);
-            addLog('Selection cleared or not in editable element');
         }
     }, [popupPosition, addLog, BUTTON_HEIGHT, BUTTON_POPUP_GAP]);
 
@@ -146,20 +141,12 @@ const ContentScript: React.FC = () => {
     const handlePopupClose = useCallback(() => {
         setPopupPosition(null);
         currentSelectionRef.current = null;
-        addLog('Popup closed');
-    }, [addLog]);
-
-    const handlePopupReset = useCallback(() => {
-        addLog('Popup state reset');
     }, [addLog]);
 
     const handleApproveRewrite = useCallback((rewrittenText: string) => {
-        addLog('handleApproveRewrite called with text: ' + rewrittenText.substring(0, 20) + '...');
-
         const currentSelection = currentSelectionRef.current
 
         if (!currentSelection) {
-            addLog('Failed to replace text: currentSelection is null');
             handlePopupClose();
             return;
         }
@@ -167,12 +154,9 @@ const ContentScript: React.FC = () => {
         const { element, start, end } = currentSelection;
 
         if (!element) {
-            addLog('Failed to replace text: element is null');
             handlePopupClose();
             return;
         }
-
-        addLog(`Replacing text in element type: ${element.tagName}, isContentEditable: ${element.isContentEditable}`);
 
         try {
             if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement) {
@@ -182,7 +166,6 @@ const ContentScript: React.FC = () => {
                 element.setSelectionRange(start, start + rewrittenText.length);
                 element.focus();
                 element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-                addLog('Replaced text in input/textarea element');
             } else if (element.isContentEditable) {
                 const currentHTML = element.innerHTML;
                 const beforeSelection = currentHTML.substring(0, start);
@@ -214,14 +197,11 @@ const ContentScript: React.FC = () => {
                 if (range.startContainer && range.endContainer) {
                     selection?.removeAllRanges();
                     selection?.addRange(range);
-                    addLog('Set selection range in contenteditable element');
                 } else {
-                    addLog('Failed to set selection range in contenteditable element');
                 }
 
                 element.focus();
                 element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-                addLog('Replaced text in contenteditable element');
             } else {
                 addLog(`Failed to replace text: Unsupported element type ${element.tagName}`);
             }
@@ -239,7 +219,6 @@ const ContentScript: React.FC = () => {
                 const ignoredKeys = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'Enter', 'Tab'];
                 if (!ignoredKeys.includes(e.key) && (e.target as HTMLElement).id !== "fast-ai-rewrite-root") {
                     handlePopupClose();
-                    addLog('Popup closed due to typing');
                 }
             }
         };
@@ -298,7 +277,6 @@ const ContentScript: React.FC = () => {
                     initialText={selectedText}
                     onClose={handlePopupClose}
                     initialPosition={popupPosition}
-                    onReset={handlePopupReset}
                     addLog={addLog}
                     onApprove={handleApproveRewrite}
                 />
