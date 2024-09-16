@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import { Button } from '../shadcn/button';
-import {Sparkles} from "lucide-react";
 
 interface FloatingButtonProps {
     position: { top: number; left: number };
@@ -9,16 +8,12 @@ interface FloatingButtonProps {
 }
 
 const FloatingButton: React.FC<FloatingButtonProps> = ({ position, onClick, addLog }) => {
-    const handleMouseDown = useCallback((e: React.MouseEvent) => {
-        addLog('FloatingButton mousedown event');
+    const handleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
-        e.nativeEvent.stopImmediatePropagation();
+        e.stopPropagation();
+        addLog('FloatingButton clicked');
         onClick();
     }, [onClick, addLog]);
-
-    const handleMouseUp = useCallback((e: React.MouseEvent) => {
-        addLog('FloatingButton mouseup event');
-    }, [addLog]);
 
     return (
         <div
@@ -27,20 +22,9 @@ const FloatingButton: React.FC<FloatingButtonProps> = ({ position, onClick, addL
                 top: `${position.top}px`,
                 left: `${position.left}px`,
             }}
-            onMouseEnter={() => addLog('Mouse entered FloatingButton')}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
         >
             <Button
-                onMouseDown={(e) => {
-                    addLog('Button mousedown event');
-                    e.nativeEvent.stopImmediatePropagation();
-                    handleMouseDown(e);
-                }}
-                onMouseUp={(e) => {
-                    addLog('Button mouseup event');
-                    e.nativeEvent.stopImmediatePropagation();
-                }}
+                onClick={handleClick}
                 size="sm"
                 className="h-6 text-xs px-2 shadow-md fastai-primary-button"
             >

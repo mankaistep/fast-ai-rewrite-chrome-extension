@@ -8,12 +8,11 @@ interface RewritePopupProps {
     initialText: string;
     onClose: () => void;
     initialPosition: { top: number; left: number; isBottom: boolean };
-    onReset: () => void;
     addLog: (message: string) => void;
     onApprove: (rewrittenText: string) => void;
 }
 
-const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initialPosition, onReset, addLog, onApprove }) => {
+const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initialPosition, addLog, onApprove }) => {
     const [selectedOption, setSelectedOption] = useState(() => {
         const savedOption = localStorage.getItem('lastSelectedOption');
         return savedOption || '';
@@ -29,14 +28,12 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
     const selectRef = useRef<HTMLDivElement>(null);
 
     const handleRewrite = async () => {
-        addLog('Rewrite button clicked');
         setIsLoading(true);
         try {
             // Simulating an API call
             await new Promise(resolve => setTimeout(resolve, 2000));
             const newText = "This is a simulated rewritten text. It's just a placeholder for now.";
             setRewrittenText(newText);
-            addLog('Rewrite completed: ' + newText);
         } catch (error) {
             console.error('Error rewriting text:', error);
             addLog('Error rewriting text: ' + (error as Error).message);
@@ -46,7 +43,6 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
     };
 
     const handleApprove = () => {
-        addLog('Approved rewritten text: ' + rewrittenText);
         onApprove(rewrittenText);
     };
 
@@ -58,7 +54,6 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                 y: e.clientY - rect.top
             });
             setIsDragging(true);
-            addLog('Started dragging popup');
         }
     };
 
@@ -77,7 +72,6 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
         const handleMouseUp = () => {
             if (isDragging) {
                 setIsDragging(false);
-                addLog('Stopped dragging popup');
             }
         };
 
@@ -105,9 +99,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
     useEffect(() => {
         setRewrittenText('');
         setIsLoading(false);
-        onReset();
-        addLog('Popup state reset');
-    }, [initialText, onReset, addLog]);
+    }, [initialText, addLog]);
 
     const options = [
         { value: 'formal', label: 'Formal' },
@@ -179,7 +171,6 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                                         onMouseDown={() => {
                                             setSelectedOption(option.value)
                                             setIsSelectOpen(false)
-                                            addLog(`Selected option: ${option.label}`)
                                         }}
                                         style={globalStyle}
                                     >

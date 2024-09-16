@@ -10,6 +10,8 @@ const BUTTON_HEIGHT = 24;
 const BUTTON_POPUP_GAP = 10;
 
 const ContentScript: React.FC = () => {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
     const [buttonPosition, setButtonPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
     const [popupPosition, setPopupPosition] = useState<{ top: number; left: number; isBottom: boolean } | null>(null);
     const [selectedText, setSelectedText] = useState('');
@@ -21,11 +23,13 @@ const ContentScript: React.FC = () => {
         end: number;
     } | null>(null);
 
+    // Write console.log
     const addLog = useCallback((message: string) => {
         setLogs(prevLogs => [...prevLogs, `${new Date().toISOString()}: ${message}`]);
         console.log(message);
     }, []);
 
+    // Check when selection change
     const handleSelectionChange = useCallback(() => {
         const selection = window.getSelection();
         const activeElement = document.activeElement;
@@ -88,17 +92,11 @@ const ContentScript: React.FC = () => {
             setButtonPosition(newButtonPosition);
             setSelectedText(selectionText);
             currentSelectionRef.current = currentSelectionInfo;
-            addLog(`New selection in editable element: "${selectionText.substring(0, 20)}..."`);
 
-            if (popupPosition) {
-                addLog('Resetting popup due to new selection');
-            }
         } else if (!selectionText || !isEditable) {
             setButtonPosition(null);
-            addLog('Selection cleared or not in editable element');
         }
     }, [popupPosition, addLog, BUTTON_HEIGHT, BUTTON_POPUP_GAP]);
-
     useEffect(() => {
         const handleSelectionChangeDebounced = debounce(handleSelectionChange, 100);
 
@@ -113,8 +111,14 @@ const ContentScript: React.FC = () => {
         };
     }, [handleSelectionChange]);
 
+    // FloatingButton click
     const handleButtonClick = useCallback(() => {
         addLog('FloatingButton clicked');
+        if (!isLoggedIn) {
+            window.open('http://localhost:3000/auth?callbackUrl=/auth/success', '_blank');
+            return
+        }
+
         if (buttonPosition) {
             let top: number;
             let left: number = Math.min(
@@ -134,23 +138,36 @@ const ContentScript: React.FC = () => {
         }
     }, [buttonPosition, addLog]);
 
+    // Popup close
     const handlePopupClose = useCallback(() => {
         setPopupPosition(null);
         currentSelectionRef.current = null;
-        addLog('Popup closed');
     }, [addLog]);
 
-    const handlePopupReset = useCallback(() => {
-        addLog('Popup state reset');
-    }, [addLog]);
+    // Close popup when user starts typing
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (popupPosition) {
+                // Close the popup if it's open and the user starts typing
+                const ignoredKeys = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'Enter', 'Tab'];
+                if (!ignoredKeys.includes(e.key) && (e.target as HTMLElement).id !== "fast-ai-rewrite-root") {
+                    handlePopupClose();
+                }
+            }
+        };
 
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [popupPosition, handlePopupClose, addLog]);
+
+    // When approve rewrite
     const handleApproveRewrite = useCallback((rewrittenText: string) => {
-        addLog('handleApproveRewrite called with text: ' + rewrittenText.substring(0, 20) + '...');
-
         const currentSelection = currentSelectionRef.current
 
         if (!currentSelection) {
-            addLog('Failed to replace text: currentSelection is null');
             handlePopupClose();
             return;
         }
@@ -158,12 +175,9 @@ const ContentScript: React.FC = () => {
         const { element, start, end } = currentSelection;
 
         if (!element) {
-            addLog('Failed to replace text: element is null');
             handlePopupClose();
             return;
         }
-
-        addLog(`Replacing text in element type: ${element.tagName}, isContentEditable: ${element.isContentEditable}`);
 
         try {
             if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement) {
@@ -173,7 +187,6 @@ const ContentScript: React.FC = () => {
                 element.setSelectionRange(start, start + rewrittenText.length);
                 element.focus();
                 element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-                addLog('Replaced text in input/textarea element');
             } else if (element.isContentEditable) {
                 const currentHTML = element.innerHTML;
                 const beforeSelection = currentHTML.substring(0, start);
@@ -205,14 +218,11 @@ const ContentScript: React.FC = () => {
                 if (range.startContainer && range.endContainer) {
                     selection?.removeAllRanges();
                     selection?.addRange(range);
-                    addLog('Set selection range in contenteditable element');
                 } else {
-                    addLog('Failed to set selection range in contenteditable element');
                 }
 
                 element.focus();
                 element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-                addLog('Replaced text in contenteditable element');
             } else {
                 addLog(`Failed to replace text: Unsupported element type ${element.tagName}`);
             }
@@ -223,24 +233,38 @@ const ContentScript: React.FC = () => {
         handlePopupClose();
     }, [handlePopupClose, addLog]);
 
+    // Check auth
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (popupPosition) {
-                // Close the popup if it's open and the user starts typing
-                const ignoredKeys = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'Enter', 'Tab'];
-                if (!ignoredKeys.includes(e.key) && (e.target as HTMLElement).id !== "fast-ai-rewrite-root") {
-                    handlePopupClose();
-                    addLog('Popup closed due to typing');
+        // Inject auth token
+        const injectToken = () => {
+            chrome.runtime.sendMessage({action: "getToken"}, (response) => {
+                if (response.token) {
+                    // @ts-ignore
+                    window.fastAiRewriteToken = response.token;
+                    setIsLoggedIn(true)
+                } else {
+                    // @ts-ignore
+                    window.fastAiRewriteToken = null
+                    setIsLoggedIn(false)
                 }
+            });
+        }
+        setTimeout(injectToken, 100)
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                injectToken()
             }
-        };
+        }
 
-        document.addEventListener('keydown', handleKeyDown);
+        // Set up listener for future token injections
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
+        // Clean up listeners
         return () => {
-            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [popupPosition, handlePopupClose, addLog]);
+    }, []);
 
     return (
         <>
@@ -256,7 +280,6 @@ const ContentScript: React.FC = () => {
                     initialText={selectedText}
                     onClose={handlePopupClose}
                     initialPosition={popupPosition}
-                    onReset={handlePopupReset}
                     addLog={addLog}
                     onApprove={handleApproveRewrite}
                 />
