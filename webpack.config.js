@@ -37,7 +37,7 @@ module.exports = {
             patterns: [
                 { from: 'public' }, // This will copy all files from the public folder to the output folder
             ],
-        }),
+        })
     ],
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.css'],

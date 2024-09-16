@@ -5,6 +5,8 @@ import RewritePopup from './components/ui/RewritePopup';
 import { getSelectionPosition, debounce } from './utils/domUtils';
 import './styles/globals.css';
 
+const HOST = "http://localhost:3000";
+
 const POPUP_WIDTH = 256;
 const BUTTON_HEIGHT = 24;
 const BUTTON_POPUP_GAP = 10;
@@ -115,7 +117,7 @@ const ContentScript: React.FC = () => {
     const handleButtonClick = useCallback(() => {
         addLog('FloatingButton clicked');
         if (!isLoggedIn) {
-            window.open('http://localhost:3000/auth?callbackUrl=/auth/success', '_blank');
+            window.open(`${HOST}/auth?callbackUrl=/auth/success`, '_blank');
             return
         }
 

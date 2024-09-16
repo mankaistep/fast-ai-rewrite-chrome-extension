@@ -3,6 +3,9 @@ import { Card, CardContent } from '../shadcn/card';
 import { Input } from '../shadcn/input';
 import { Button } from '../shadcn/button';
 import {X, ChevronDown, RotateCw, Sparkles, Check} from 'lucide-react';
+import {getAgents, rewrite} from "../../lib/rewrite-utils";
+
+const HOST = 'http://localhost:3000'
 
 interface RewritePopupProps {
     initialText: string;
@@ -13,9 +16,14 @@ interface RewritePopupProps {
 }
 
 const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initialPosition, addLog, onApprove }) => {
-    const [selectedOption, setSelectedOption] = useState(() => {
+    const [agents, setAgents] = useState<[{ id: number; name: string }]>([{
+        id: -1,
+        name: 'Select an agent'
+    }])
+
+    const [selectedAgent, setSelectedAgent] = useState(() => {
         const savedOption = localStorage.getItem('lastSelectedOption');
-        return savedOption || '';
+        return savedOption || -1;
     });
     const [isSelectOpen, setIsSelectOpen] = useState(false);
     const [extraNote, setExtraNote] = useState('');
@@ -30,8 +38,6 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
     const handleRewrite = async () => {
         setIsLoading(true);
         try {
-            // Simulating an API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
             const newText = "This is a simulated rewritten text. It's just a placeholder for now.";
             setRewrittenText(newText);
         } catch (error) {
@@ -93,19 +99,22 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
     }, [isDragging, dragOffset, addLog]);
 
     useEffect(() => {
-        localStorage.setItem('lastSelectedOption', selectedOption);
-    }, [selectedOption]);
+        localStorage.setItem('lastSelectedOption', selectedAgent.toString());
+    }, [selectedAgent]);
 
     useEffect(() => {
         setRewrittenText('');
         setIsLoading(false);
     }, [initialText, addLog]);
 
-    const options = [
-        { value: 'formal', label: 'Formal' },
-        { value: 'casual', label: 'Casual' },
-        { value: 'professional', label: 'Professional' },
-    ];
+    useEffect(() => {
+        getAgents().then((agents) => {
+            setAgents(agents)
+            if (selectedAgent == -1) {
+                setSelectedAgent(agents[0].id)
+            }
+        });
+    }, []);
 
     const globalStyle = {
         fontSize: '12px',
@@ -140,106 +149,126 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                         <X className="h-3 w-3" />
                     </Button>
                 </div>
-                <CardContent className="p-3 space-y-3" style={globalStyle}>
-                    <div
-                        className="p-1 bg-gray-100 rounded-md overflow-y-auto fastai-border-radius-6px"
-                        style={{
-                            height: 'auto',
-                            maxHeight: 'calc(1.5rem * 4)',
-                            lineHeight: '1.5rem',
-                            ...globalStyle,
-                        }}
-                    >
-                        {initialText}
-                    </div>
-                    <div ref={selectRef} className="relative">
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsSelectOpen(!isSelectOpen)}
-                            className="w-full h-8 justify-between px-3 py-1 border border-gray-300 rounded-md fastai-border-radius-6px"
-                            style={globalStyle}
-                        >
-                            {selectedOption ? options.find(opt => opt.value === selectedOption)?.label : 'Select agent'}
-                            <ChevronDown className="h-4 w-4 opacity-50 fastai-border-radius-6px" />
-                        </Button>
-                        {isSelectOpen && (
-                            <div className="absolute mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-10 fastai-border-radius-6px" style={globalStyle}>
-                                {options.map((option) => (
-                                    <div
-                                        key={option.value}
-                                        className="px-3 py-1.5 hover:bg-gray-100 cursor-pointer first:rounded-t-md last:rounded-b-md"
-                                        onMouseDown={() => {
-                                            setSelectedOption(option.value)
-                                            setIsSelectOpen(false)
-                                        }}
-                                        style={globalStyle}
-                                    >
-                                        {option.label}
-                                    </div>
-                                ))}
+                {
+                    agents.length > 0 ? (
+                        <CardContent className="p-3 space-y-3" style={globalStyle}>
+                            <div
+                                className="p-1 bg-gray-100 rounded-md overflow-y-auto fastai-border-radius-6px"
+                                style={{
+                                    height: 'auto',
+                                    maxHeight: 'calc(1.5rem * 4)',
+                                    lineHeight: '1.5rem',
+                                    ...globalStyle,
+                                }}
+                            >
+                                {initialText}
                             </div>
-                        )}
-                    </div>
-                    <Input
-                        placeholder="Extra note"
-                        value={extraNote}
-                        onChange={(e) => setExtraNote(e.target.value)}
-                        className="w-full h-8 border border-gray-300 rounded-md fastai-border-radius-6px"
-                        style={globalStyle}
-                    />
-                    {rewrittenText && (
-                        <div
-                            className="p-1 bg-green-100 rounded-md overflow-y-auto"
-                            style={{
-                                height: 'auto',
-                                maxHeight: 'calc(1.5rem * 4)',
-                                lineHeight: '1.5rem',
-                                ...globalStyle,
-                            }}
-                        >
-                            {rewrittenText}
-                        </div>
-                    )}
-                    {!rewrittenText ? (
-                        <Button
-                            onClick={handleRewrite}
-                            className="w-full h-8 fastai-primary-button"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
-                                    <div className="animate-pulse">
-                                        Thinking...
+                            <div ref={selectRef} className="relative">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsSelectOpen(!isSelectOpen)}
+                                    className="w-full h-8 justify-between px-3 py-1 border border-gray-300 rounded-md fastai-border-radius-6px"
+                                    style={globalStyle}
+                                >
+                                    {selectedAgent ? agents.find(agent => agent.id == selectedAgent)?.name : 'Select agent'}
+                                    <ChevronDown className="h-4 w-4 opacity-50 fastai-border-radius-6px" />
+                                </Button>
+                                {isSelectOpen && (
+                                    <div className="absolute mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-10 fastai-border-radius-6px" style={globalStyle}>
+                                        {agents.map((agent) => (
+                                            <div
+                                                key={agent.id}
+                                                className="px-3 py-1.5 hover:bg-gray-100 cursor-pointer first:rounded-t-md last:rounded-b-md"
+                                                onMouseDown={() => {
+                                                    setSelectedAgent(agent.id)
+                                                    setIsSelectOpen(false)
+                                                }}
+                                                style={globalStyle}
+                                            >
+                                                {agent.name}
+                                            </div>
+                                        ))}
                                     </div>
-                                </>
-                            ) : (
-                                'Rewrite'
-                            )}
-                        </Button>
-                    ) : (
-                        <div className="flex justify-between">
-                            <Button
-                                onClick={handleApprove}
-                                className="w-3/4 h-8 mr-1 fastai-primary-button"
-                            >
-                                Looks good
-                                <Check className="w-4 h-4 ml-2"/>
-                            </Button>
-                            <Button
-                                onClick={handleRewrite}
-                                className="w-1/4 h-8 ml-1 fastai-secondary-button"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <RotateCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <RotateCw className="h-4 w-4" />
                                 )}
+                            </div>
+                            <Input
+                                placeholder="Extra note"
+                                value={extraNote}
+                                onChange={(e) => setExtraNote(e.target.value)}
+                                className="w-full h-8 border border-gray-300 rounded-md fastai-border-radius-6px"
+                                style={globalStyle}
+                            />
+                            {rewrittenText && (
+                                <div
+                                    className="p-1 bg-green-100 rounded-md overflow-y-auto"
+                                    style={{
+                                        height: 'auto',
+                                        maxHeight: 'calc(1.5rem * 4)',
+                                        lineHeight: '1.5rem',
+                                        ...globalStyle,
+                                    }}
+                                >
+                                    {rewrittenText}
+                                </div>
+                            )}
+                            {!rewrittenText ? (
+                                <Button
+                                    onClick={handleRewrite}
+                                    className="w-full h-8 fastai-primary-button"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
+                                            <div className="animate-pulse">
+                                                Thinking...
+                                            </div>
+                                        </>
+                                    ) : (
+                                        'Rewrite'
+                                    )}
+                                </Button>
+                            ) : (
+                                <div className="flex justify-between">
+                                    <Button
+                                        onClick={handleApprove}
+                                        className="w-3/4 h-8 mr-1 fastai-primary-button"
+                                    >
+                                        Looks good
+                                        <Check className="w-4 h-4 ml-2"/>
+                                    </Button>
+                                    <Button
+                                        onClick={handleRewrite}
+                                        className="w-1/4 h-8 ml-1 fastai-secondary-button"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? (
+                                            <RotateCw className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <RotateCw className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </div>
+                            )}
+                        </CardContent>
+                    ) : (
+                        <CardContent className="p-3 space-y-3" style={globalStyle}>
+                            <p className="text-muted-foreground text-center" style={globalStyle}>
+                                Requires agents to start rewriting
+                            </p>
+                            <Button
+                                onClick={() => {
+                                    window.open(`${HOST}/a/agents/create`, '_blank');
+                                    onClose();
+                                }}
+                                className="w-full h-8 ml-1 fastai-primary-button"
+                            >
+                                Create agent
                             </Button>
-                        </div>
-                    )}
-                </CardContent>
+                        </CardContent>
+                    )
+                }
+
             </Card>
         </div>
     )
