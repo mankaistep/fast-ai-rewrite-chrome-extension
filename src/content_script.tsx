@@ -23,11 +23,13 @@ const ContentScript: React.FC = () => {
         end: number;
     } | null>(null);
 
+    // Write console.log
     const addLog = useCallback((message: string) => {
         setLogs(prevLogs => [...prevLogs, `${new Date().toISOString()}: ${message}`]);
         console.log(message);
     }, []);
 
+    // Check when selection change
     const handleSelectionChange = useCallback(() => {
         const selection = window.getSelection();
         const activeElement = document.activeElement;
@@ -95,7 +97,6 @@ const ContentScript: React.FC = () => {
             setButtonPosition(null);
         }
     }, [popupPosition, addLog, BUTTON_HEIGHT, BUTTON_POPUP_GAP]);
-
     useEffect(() => {
         const handleSelectionChangeDebounced = debounce(handleSelectionChange, 100);
 
@@ -110,6 +111,7 @@ const ContentScript: React.FC = () => {
         };
     }, [handleSelectionChange]);
 
+    // FloatingButton click
     const handleButtonClick = useCallback(() => {
         addLog('FloatingButton clicked');
         if (!isLoggedIn) {
@@ -136,11 +138,32 @@ const ContentScript: React.FC = () => {
         }
     }, [buttonPosition, addLog]);
 
+    // Popup close
     const handlePopupClose = useCallback(() => {
         setPopupPosition(null);
         currentSelectionRef.current = null;
     }, [addLog]);
 
+    // Close popup when user starts typing
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (popupPosition) {
+                // Close the popup if it's open and the user starts typing
+                const ignoredKeys = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'Enter', 'Tab'];
+                if (!ignoredKeys.includes(e.key) && (e.target as HTMLElement).id !== "fast-ai-rewrite-root") {
+                    handlePopupClose();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [popupPosition, handlePopupClose, addLog]);
+
+    // When approve rewrite
     const handleApproveRewrite = useCallback((rewrittenText: string) => {
         const currentSelection = currentSelectionRef.current
 
@@ -209,24 +232,6 @@ const ContentScript: React.FC = () => {
 
         handlePopupClose();
     }, [handlePopupClose, addLog]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (popupPosition) {
-                // Close the popup if it's open and the user starts typing
-                const ignoredKeys = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'Enter', 'Tab'];
-                if (!ignoredKeys.includes(e.key) && (e.target as HTMLElement).id !== "fast-ai-rewrite-root") {
-                    handlePopupClose();
-                }
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [popupPosition, handlePopupClose, addLog]);
 
     // Check auth
     useEffect(() => {
