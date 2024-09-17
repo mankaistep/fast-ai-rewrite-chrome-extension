@@ -10,7 +10,7 @@ export async function getAgents() {
     return await response.json()
 }
 
-export async function rewrite(agentId: string, original: string, prompt: string)  {
+export async function rewrite(agentId: number, original: string, prompt: string)  {
     const response = await sendRequest('/api/rewrite/generate', 'POST', { agentId, original, prompt }, true);
 
     if (response == null) {

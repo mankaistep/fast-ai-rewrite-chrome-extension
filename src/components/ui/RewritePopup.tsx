@@ -3,7 +3,7 @@ import { Card, CardContent } from '../shadcn/card';
 import { Input } from '../shadcn/input';
 import { Button } from '../shadcn/button';
 import {X, ChevronDown, RotateCw, Sparkles, Check} from 'lucide-react';
-import {getAgents, rewrite} from "../../lib/rewrite-utils";
+import {getAgents, markAsApproved, rewrite} from "../../lib/rewrite-utils";
 
 const HOST = 'http://localhost:3000'
 
@@ -23,23 +23,39 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
 
     const [selectedAgent, setSelectedAgent] = useState(() => {
         const savedOption = localStorage.getItem('lastSelectedOption');
-        return savedOption || -1;
+        if (savedOption) {
+            const savedId = parseInt(savedOption)
+            if (!agents.map((agent) => agent.id).includes(savedId)) {
+                if (agents.length > 0) {
+                    return agents[0].id
+                }
+            }
+        }
+        return -1;
     });
+
+    const [suggestion, setSuggestion] = useState<{
+        activityId: string,
+        agentId: number,
+        original: string,
+        prompt: string,
+        suggestion: string
+    } | null>(null);
+
     const [isSelectOpen, setIsSelectOpen] = useState(false);
     const [extraNote, setExtraNote] = useState('');
     const [position, setPosition] = useState(initialPosition);
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [isLoading, setIsLoading] = useState(false);
-    const [rewrittenText, setRewrittenText] = useState('');
     const popupRef = useRef<HTMLDivElement>(null);
     const selectRef = useRef<HTMLDivElement>(null);
 
     const handleRewrite = async () => {
         setIsLoading(true);
         try {
-            const newText = "This is a simulated rewritten text. It's just a placeholder for now.";
-            setRewrittenText(newText);
+            const suggestion = await rewrite(selectedAgent, initialText, extraNote);
+            setSuggestion(suggestion);
         } catch (error) {
             console.error('Error rewriting text:', error);
             addLog('Error rewriting text: ' + (error as Error).message);
@@ -48,8 +64,19 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
         }
     };
 
-    const handleApprove = () => {
-        onApprove(rewrittenText);
+    const handleApprove = async () => {
+        if (suggestion) {
+            onApprove(suggestion.suggestion);
+
+            // Send request to mark approve
+            try {
+                await markAsApproved(suggestion.activityId)
+                setSuggestion(null)
+            } catch (error) {
+                console.error('Error marking as approved:', error);
+                addLog('Error marking as approved: ' + (error as Error).message);
+            }
+        }
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -103,7 +130,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
     }, [selectedAgent]);
 
     useEffect(() => {
-        setRewrittenText('');
+        setSuggestion(null);
         setIsLoading(false);
     }, [initialText, addLog]);
 
@@ -198,7 +225,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                                 className="w-full h-8 border border-gray-300 rounded-md fastai-border-radius-6px"
                                 style={globalStyle}
                             />
-                            {rewrittenText && (
+                            {suggestion && (
                                 <div
                                     className="p-1 bg-green-100 rounded-md overflow-y-auto"
                                     style={{
@@ -208,10 +235,10 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                                         ...globalStyle,
                                     }}
                                 >
-                                    {rewrittenText}
+                                    {suggestion.suggestion}
                                 </div>
                             )}
-                            {!rewrittenText ? (
+                            {!suggestion ? (
                                 <Button
                                     onClick={handleRewrite}
                                     className="w-full h-8 fastai-primary-button"
