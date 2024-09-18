@@ -180,7 +180,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                     agents.length > 0 ? (
                         <CardContent className="p-3 space-y-3" style={globalStyle}>
                             <div
-                                className="p-1 bg-gray-100 rounded-md overflow-y-auto fastai-border-radius-6px"
+                                className="pl-3 pr-3 bg-gray-100 rounded-md overflow-y-auto fastai-border-radius-6px"
                                 style={{
                                     height: 'auto',
                                     maxHeight: 'calc(1.5rem * 4)',
@@ -227,11 +227,12 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                             />
                             {suggestion && (
                                 <div
-                                    className="p-1 bg-green-100 rounded-md overflow-y-auto"
+                                    className="p-3 bg-green-100 rounded-md overflow-y-auto"
                                     style={{
                                         height: 'auto',
-                                        maxHeight: 'calc(1.5rem * 4)',
+                                        maxHeight: 'calc(1.5rem * 7)', // 7 lines
                                         lineHeight: '1.5rem',
+                                        whiteSpace: 'pre-wrap', // Preserves line breaks
                                         ...globalStyle,
                                     }}
                                 >
@@ -258,15 +259,8 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                             ) : (
                                 <div className="flex justify-between">
                                     <Button
-                                        onClick={handleApprove}
-                                        className="w-3/4 h-8 mr-1 fastai-primary-button"
-                                    >
-                                        Looks good
-                                        <Check className="w-4 h-4 ml-2"/>
-                                    </Button>
-                                    <Button
                                         onClick={handleRewrite}
-                                        className="w-1/4 h-8 ml-1 fastai-secondary-button"
+                                        className="w-1/4 h-8 mr-1 fastai-secondary-button"
                                         disabled={isLoading}
                                     >
                                         {isLoading ? (
@@ -274,6 +268,13 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                                         ) : (
                                             <RotateCw className="h-4 w-4" />
                                         )}
+                                    </Button>
+                                    <Button
+                                        onClick={handleApprove}
+                                        className="w-3/4 h-8 ml-1 fastai-primary-button"
+                                    >
+                                        Looks good
+                                        <Check className="w-4 h-4 ml-2"/>
                                     </Button>
                                 </div>
                             )}
