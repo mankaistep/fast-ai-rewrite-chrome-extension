@@ -22,16 +22,11 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
     }])
 
     const [selectedAgent, setSelectedAgent] = useState(() => {
-        const savedOption = localStorage.getItem('lastSelectedOption');
-        if (savedOption) {
-            const savedId = parseInt(savedOption)
-            if (!agents.map((agent) => agent.id).includes(savedId)) {
-                if (agents.length > 0) {
-                    return agents[0].id
-                }
-            }
+        const lastSelectedOption = window.localStorage.getItem('lastSelectedOption')
+        if (lastSelectedOption) {
+            return parseInt(lastSelectedOption)
         }
-        return -1;
+        return -1
     });
 
     const [suggestion, setSuggestion] = useState<{
@@ -137,9 +132,16 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
     useEffect(() => {
         getAgents().then((agents) => {
             setAgents(agents)
-            if (selectedAgent == -1) {
-                setSelectedAgent(agents[0].id)
-            }
+
+            // Set default selected agent
+            const savedOption = localStorage.getItem('lastSelectedOption');
+            if (savedOption) {
+                const savedId = parseInt(savedOption)
+                if (agents.map((a: any) => a.id).includes(savedId)) {
+                    setSelectedAgent(savedId)
+                    addLog('Set selected agent to id ' + savedId)
+                } else setSelectedAgent(-1)
+            } else setSelectedAgent(-1)
         });
     }, []);
 
