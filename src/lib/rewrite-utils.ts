@@ -1,13 +1,21 @@
 import {sendRequest} from "./request-utils";
 
 export async function getAgents() {
-    const response = await sendRequest('/api/agents', 'GET', null, true);
+    try {
+        const response = await sendRequest('/api/agents', 'GET', null, true);
 
-    if (response == null) {
-        return null
+        if (response == null) {
+            return null;
+        }
+
+        const allAgents = await response.json();
+
+        // Filter out agents that are not active
+        return allAgents.filter((agent: any) => agent.status === "active");
+    } catch (error) {
+        console.error("Error fetching agents:", error);
+        return null;
     }
-
-    return await response.json()
 }
 
 export async function rewrite(agentId: number, original: string, prompt: string)  {
