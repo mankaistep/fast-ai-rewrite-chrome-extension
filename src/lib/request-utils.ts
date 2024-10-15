@@ -1,4 +1,4 @@
-const HOST = "http://localhost:3000";
+const HOST = "https://fastairewrite.com";
 
 export async function sendRequest(path: string, method: string, body: any, needsAuth: boolean) {
     const request = new Request(`${HOST}/${path.replace('/', '')}`, {
