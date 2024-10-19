@@ -7,26 +7,37 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Check cookies
-chrome.cookies.get({
+function getSessionToken(callback: any) {
+    chrome.cookies.get({
         url: HOST,
         name: 'next-auth.session-token'
     }, (cookie) => {
         if (cookie) {
             console.log('Session token found', cookie.value);
+            callback(cookie.value);
         } else {
-            console.log('Session token not found');
+            chrome.cookies.get({
+                url: HOST,
+                name: '__Secure-next-auth.session-token'
+            }, (secureCookie) => {
+                if (secureCookie) {
+                    console.log('Secure session token found', secureCookie.value);
+                    callback(secureCookie.value);
+                } else {
+                    console.log('No session token found');
+                    callback(null);
+                }
+            });
         }
-    })
+    });
+}
 
 // Pass token for the client script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "getToken") {
-        chrome.cookies.get({
-            url: HOST,  // Replace with your actual domain in production
-            name: "next-auth.session-token"
-        }, (cookie) => {
-            if (cookie) {
-                sendResponse({token: cookie.value});
+        getSessionToken((token: any) => {
+            if (token) {
+                sendResponse({token: token});
             } else {
                 sendResponse({error: "Token not found"});
             }
