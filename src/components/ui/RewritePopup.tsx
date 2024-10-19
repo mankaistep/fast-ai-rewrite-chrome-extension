@@ -4,8 +4,9 @@ import { Input } from '../shadcn/input';
 import { Button } from '../shadcn/button';
 import {X, ChevronDown, RotateCw, Sparkles, Check} from 'lucide-react';
 import {getAgents, markAsApproved, rewrite} from "../../lib/rewrite-utils";
+import {getHost} from "../../lib/utils";
 
-const HOST = 'http://localhost:3000'
+const HOST = getHost();
 
 interface RewritePopupProps {
     initialText: string;

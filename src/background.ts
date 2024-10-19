@@ -1,10 +1,14 @@
+import {getHost} from "./lib/utils";
+
+const HOST = getHost();
+
 chrome.runtime.onInstalled.addListener(() => {
     console.log('Fast AI Rewrite extension installed');
 });
 
 // Check cookies
 chrome.cookies.get({
-        url: 'http://localhost:3000',
+        url: HOST,
         name: 'next-auth.session-token'
     }, (cookie) => {
         if (cookie) {
@@ -18,7 +22,7 @@ chrome.cookies.get({
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "getToken") {
         chrome.cookies.get({
-            url: "http://localhost:3000",  // Replace with your actual domain in production
+            url: HOST,  // Replace with your actual domain in production
             name: "next-auth.session-token"
         }, (cookie) => {
             if (cookie) {

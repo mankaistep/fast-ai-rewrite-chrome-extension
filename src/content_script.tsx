@@ -4,8 +4,9 @@ import FloatingButton from './components/ui/FloatingButton';
 import RewritePopup from './components/ui/RewritePopup';
 import { getSelectionPosition, debounce } from './utils/domUtils';
 import './styles/globals.css';
+import {getHost} from "./lib/utils";
 
-const HOST = "http://localhost:3000";
+const HOST = getHost();
 
 const POPUP_WIDTH = 256;
 const BUTTON_HEIGHT = 24;

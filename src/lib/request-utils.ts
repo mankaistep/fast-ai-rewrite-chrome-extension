@@ -1,4 +1,6 @@
-const HOST = "https://fastairewrite.com";
+import {getHost} from "./utils";
+
+const HOST = getHost()
 
 export async function sendRequest(path: string, method: string, body: any, needsAuth: boolean) {
     const request = new Request(`${HOST}/${path.replace('/', '')}`, {
