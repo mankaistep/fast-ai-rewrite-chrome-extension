@@ -8,8 +8,6 @@
     "cookies"
   ],
   "host_permissions": [
-    "http://localhost:3000/*",
-    "https://localhost:3000/*",
     "https://fastairewrite.com/*"
   ],
   "background": {
