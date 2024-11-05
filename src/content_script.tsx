@@ -191,11 +191,13 @@ const ContentScript: React.FC = () => {
                 element.focus();
                 element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
             } else if (element.isContentEditable) {
-                const currentHTML = element.innerHTML;
-                const beforeSelection = currentHTML.substring(0, start);
-                const afterSelection = currentHTML.substring(end);
-                const newHTML = beforeSelection + rewrittenText + afterSelection;
-                element.innerHTML = newHTML;
+
+                // Comment because it didn't work with editor with state
+                // const currentHTML = element.innerHTML;
+                // const beforeSelection = currentHTML.substring(0, start);
+                // const afterSelection = currentHTML.substring(end);
+                // const newHTML = beforeSelection + rewrittenText + afterSelection;
+                // element.innerHTML = newHTML;
 
                 // Set the cursor position or select the replaced text
                 const range = document.createRange();
@@ -221,6 +223,18 @@ const ContentScript: React.FC = () => {
                 if (range.startContainer && range.endContainer) {
                     selection?.removeAllRanges();
                     selection?.addRange(range);
+
+                    // Create a paste event with the new text as clipboard data
+                    const pasteEvent = new ClipboardEvent('paste', {
+                        bubbles: true,
+                        cancelable: true,
+                        clipboardData: new DataTransfer()
+                    });
+                    pasteEvent.clipboardData?.setData('text/plain', rewrittenText);
+
+                    // Focus on the element and dispatch the paste event
+                    element.focus();
+                    element.dispatchEvent(pasteEvent);
                 } else {
                 }
 
