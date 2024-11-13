@@ -8,7 +8,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "./components/shadcn/card
 
 const Popup: React.FC = () => {
     return (
-        <Card className="w-64">
+        <Card>
             <CardHeader>
                 <CardTitle>Fast AI Rewrite</CardTitle>
             </CardHeader>
