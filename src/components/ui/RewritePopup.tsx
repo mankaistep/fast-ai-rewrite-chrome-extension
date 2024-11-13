@@ -134,15 +134,17 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
         getAgents().then((agents) => {
             setAgents(agents)
 
-            // Set default selected agent
+            // Set default selected agent or the first agent
             const savedOption = localStorage.getItem('lastSelectedOption');
             if (savedOption) {
                 const savedId = parseInt(savedOption)
                 if (agents.map((a: any) => a.id).includes(savedId)) {
                     setSelectedAgent(savedId)
                     addLog('Set selected agent to id ' + savedId)
-                } else setSelectedAgent(-1)
-            } else setSelectedAgent(-1)
+                } else setSelectedAgent(agents[0].id)
+            } else {
+                setSelectedAgent(agents[0].id)
+            }
         });
     }, []);
 
@@ -200,7 +202,7 @@ const RewritePopup: React.FC<RewritePopupProps> = ({ initialText, onClose, initi
                                     className="w-full h-8 justify-between px-3 py-1 border border-gray-300 rounded-md fastai-border-radius-6px"
                                     style={globalStyle}
                                 >
-                                    {selectedAgent ? agents.find(agent => agent.id == selectedAgent)?.name : 'Select agent'}
+                                    {(selectedAgent && selectedAgent != -1) ? agents.find(agent => agent.id == selectedAgent)?.name : 'Select agent'}
                                     <ChevronDown className="h-4 w-4 opacity-50 fastai-border-radius-6px" />
                                 </Button>
                                 {isSelectOpen && (

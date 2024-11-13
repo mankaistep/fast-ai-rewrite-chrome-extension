@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { Button } from '../shadcn/button';
+import {Sparkles} from "lucide-react";
 
 interface FloatingButtonProps {
     position: { top: number; left: number };
